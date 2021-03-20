@@ -17,3 +17,19 @@ Currently, this compiles into a 17kb binary on the Pokitto. Most of that space i
 
 Instead of a `main()` function, FemtoLib games need to implement an `update()` function that gets called every frame. Moving the game loop into the library allows greater portability to platforms such as emscripten.
 
+Actually drawing something onto the screen can be done like this:
+```cpp
+#include <Femto>
+
+void update() {
+    // allow calling functions without using a namespace (Graphics::clear())
+    using namespace Graphics;
+
+    // clear the screen
+    clear();
+    
+    // draw a 40x40 square on coordinate 10, 20.
+    fillRect(10, 20, 40, 40, colorFromRGB(0x88AA33));
+}
+```
+
