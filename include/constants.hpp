@@ -2,11 +2,11 @@
 
 #include "Femto"
 
-#ifndef MAX_FILLERS
-#define MAX_FILLERS 4
-#endif
+// #ifndef MAX_FILLERS
+// #define MAX_FILLERS 4
+// #endif
 
-inline constexpr u32 maxFillers = MAX_FILLERS;
+// inline constexpr u32 maxFillers = MAX_FILLERS;
 
 #if defined(POKITTO_CLASSIC) || defined(POK_SIM)
 #define LCD_ST7775
@@ -14,6 +14,8 @@ inline constexpr u32 maxFillers = MAX_FILLERS;
 
 #if defined(TARGET_LPC11U6X) && defined(LCD_ST7775)
 #define USE_SCANLINE_RENDERER
+#else
+#pragma error
 #endif
 
 #if defined(POK_SIM) || defined(__EMSCRIPTEN__)

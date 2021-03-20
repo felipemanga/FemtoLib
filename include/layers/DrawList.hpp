@@ -1,5 +1,4 @@
 #pragma once
-#ifdef _FEMTO_INTERNAL_
 #include "Femto"
 #include <algorithm>
 
@@ -104,7 +103,7 @@ namespace Graphics {
                     .y = textY,
                     .maxY = h,
                     .b1 = numBytes,
-                    .s = Graphics::color
+                    .s = primaryColor
                 });
 
             textX += numBytes * scale + charPadding;
@@ -113,9 +112,11 @@ namespace Graphics {
         inline void blitBitPlane(u16 *, Cmd &s, u32 y){
         }
 
+        template <bool isTransparent>
         inline void blit1BPP(u16 *line, Cmd &s, u32 y){
             auto data = static_cast<const u8*>(s.data);
-            u32 color = s.udata;
+            u32 color = s.udata & 0xFFFF;
+            u32 secondary = s.udata >> 16;
             int w = data[0];
             auto src = data + 2 + y * ((w + (w&0x7?8:0)) >> 3);
             if(s.x < 0){
@@ -130,19 +131,25 @@ namespace Graphics {
 
             if(w&7) w += 8;
             w >>= 3;
-// #ifndef POK_SIM
-//             pixelExpand(line, src, w, s.b1, 8);
-// #else
             u32 alpha = s.b1;
 
             if (alpha != (0xFF + 4 >> 3)) {
                 while (w--) {
                     u32 b = *src++;
                     for (s32 i=7; i>=0; --i, b >>= 1) {
-                        if (b&1) {
+                        if (isTransparent) {
+                            if (b&1) {
+                                u32 bg = line[i];
+                                bg = (bg | bg << 16) & 0x07e0f81f;
+                                bg += (color - bg) * alpha >> 5;
+                                bg &= 0x07e0f81f;
+                                line[i] = (bg | bg >> 16);
+                            }
+                        } else {
+                            u32 c = (b&1) ? color : secondary;
                             u32 bg = line[i];
                             bg = (bg | bg << 16) & 0x07e0f81f;
-                            bg += (color - bg) * alpha >> 5;
+                            bg += (c - bg) * alpha >> 5;
                             bg &= 0x07e0f81f;
                             line[i] = (bg | bg >> 16);
                         }
@@ -152,21 +159,43 @@ namespace Graphics {
             } else {
                 while(w--){
                     unsigned int b = *src++;
-                    if(b&1) line[7] = color; b >>= 1;
-                    if(b&1) line[6] = color; b >>= 1;
-                    if(b&1) line[5] = color; b >>= 1;
-                    if(b&1) line[4] = color; b >>= 1;
-                    if(b&1) line[3] = color; b >>= 1;
-                    if(b&1) line[2] = color; b >>= 1;
-                    if(b&1) line[1] = color; b >>= 1;
+                    if(b&1) line[7] = color;
+                    else if(!isTransparent) line[7] = secondary;
+                    b >>= 1;
+                    if(b&1) line[6] = color;
+                    else if(!isTransparent) line[6] = secondary;
+                    b >>= 1;
+                    if(b&1) line[5] = color;
+                    else if(!isTransparent) line[5] = secondary;
+                    b >>= 1;
+                    if(b&1) line[4] = color;
+                    else if(!isTransparent) line[4] = secondary;
+                    b >>= 1;
+                    if(b&1) line[3] = color;
+                    else if(!isTransparent) line[3] = secondary;
+                    b >>= 1;
+                    if(b&1) line[2] = color;
+                    else if(!isTransparent) line[2] = secondary;
+                    b >>= 1;
+                    if(b&1) line[1] = color;
+                    else if(!isTransparent) line[1] = secondary;
+                    b >>= 1;
                     if(b&1) line[0] = color;
+                    else if(!isTransparent) line[0] = secondary;
+
                     line += 8;
                 }
             }
 // #endif
         }
 
+        template <bool isTransparent>
         inline void blit8BPP(u16 *line, Cmd &s, u32 y){
+            extern void pixelCopy8BPPA(u16* dest, const u8* src, u32 count, const u16* palette, u32 alpha);
+            extern void pixelCopy8BPPAS(u16* dest, const u8* src, u32 count, const u16* palette, u32 alpha);
+            extern void pixelCopy8BPP(u16* dest, const u8* src, u32 count, const u16* palette);
+            extern void pixelCopy8BPPS(u16* dest, const u8* src, u32 count, const u16* palette);
+
             auto data = static_cast<const u8*>(s.data);
             int w = data[0];
             const uint8_t *src = data + 2 + y * w;
@@ -180,28 +209,18 @@ namespace Graphics {
                 w = screenWidth - s.x;
             }
 
-            // pixelCopy(line, src, w, s.b1);
             auto palette = reinterpret_cast<const u16 *>(s.udata);
             u32 alpha = s.b1;
             if (alpha != (0xFF + 4 >> 3)) {
-                while(w--){
-                    if(u32 color = *src++){
-                        color = palette[color];
-                        u32 bg = *line;
-                        bg = (bg | bg << 16) & 0x07e0f81f;
-                        color = (color | color << 16) & 0x07e0f81f;
-                        bg += (color - bg) * alpha >> 5;
-                        bg &= 0x07e0f81f;
-                        *line = (bg | bg >> 16);
-                    }
-                    line++;
-                }
+                if (isTransparent)
+                    pixelCopy8BPPA(line, src, w, palette, alpha);
+                else
+                    pixelCopy8BPPAS(line, src, w, palette, alpha);
             } else {
-                while(w--){
-                    if(u32 c = *src++)
-                        *line = palette[c];
-                    line++;
-                }
+                if (isTransparent)
+                    pixelCopy8BPP(line, src, w, palette);
+                else
+                    pixelCopy8BPPS(line, src, w, palette);
             }
         }
 /*
@@ -595,7 +614,7 @@ namespace Graphics {
 
     }
 
-    inline void line(s32 x, s32 y, s32 ex, s32 ey, u32 color = Graphics::color) {
+    inline void line(s32 x, s32 y, s32 ex, s32 ey, u32 color = Graphics::primaryColor) {
         using namespace _drawListInternal;
         if (y > ey) {
             std::swap(y, ey);
@@ -649,7 +668,7 @@ namespace Graphics {
             });
     }
 
-    inline void fillRect(s32 x, s32 y, s32 w, s32 h, u32 color = Graphics::color) {
+    inline void fillRect(s32 x, s32 y, s32 w, s32 h, u32 color = Graphics::primaryColor) {
         using namespace _drawListInternal;
         // LOG(x, y, w, h, color, "\n");
 
@@ -679,28 +698,29 @@ namespace Graphics {
             });
     }
 
-    template <u32 bits>
-    inline void draw(const u8 *data, s32 x = 0, s32 y = 0, u8 alpha = 0xFF){
+    template <u32 bits, bool transparent = false>
+    inline void draw(const u8 *data, s32 x = 0, s32 y = 0, f32 falpha = 1){
         using namespace _drawListInternal;
 
         if (x + data[0] <= 0 || x >= screenWidth) return;
         if (y + data[1] <= 0 || y >= screenHeight) return;
 
+        u8 alpha = round(falpha * 255);
         alpha = u32(alpha) + 4 >> 3;
         auto f = blitBitPlane;
         auto udata = reinterpret_cast<uptr>(palette);
 
         switch(bits){
         case 1:
-            f = blit1BPP;
-            udata = color;
+            f = blit1BPP<transparent>;
+            udata = primaryColor | (secondaryColor << 16);
             if (alpha != (0xFF + 4 >> 3)) {
                 udata = (udata | udata << 16) & 0x07e0f81f;
             }
             break;
 
         case 8:
-            f = blit8BPP;
+            f = blit8BPP<transparent>;
             break;
 
         default:
@@ -723,4 +743,3 @@ namespace Graphics {
     }
 
 }
-#endif

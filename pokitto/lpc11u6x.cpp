@@ -8,19 +8,6 @@ inline bool menuButton(){
 
 static volatile u32 pt_count = 0;
 
-void initDefaultAudio(){
-    static Audio::Sink<4, 8000> defaultAudio;
-}
-
-void initDefaultGraphics(){
-    Graphics::palette = Graphics::generalPalette;
-    static Graphics::layer::DrawList<200> drawList(fontTiny);
-    static Graphics::ScanlineRenderer defaultGfx = {
-        Graphics::layer::solidColor(colorFromRGB(0x1155AA)),
-        drawList
-    };
-}
-
 bool isPressed(Button button) {
     u32 address = 0;
     switch(button){

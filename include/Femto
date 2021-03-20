@@ -8,10 +8,13 @@
 
 #include "types.hpp"
 #include "constants.hpp"
-
-#define _FEMTO_INTERNAL_
 #include "graphics.hpp"
-#undef _FEMTO_INTERNAL_
+
+namespace Audio {
+inline void init(){
+    static Audio::Sink<4, 8000> defaultAudio;
+}
+}
 
 enum class Button {
     A,

@@ -1,5 +1,4 @@
 #pragma once
-#ifdef _FEMTO_INTERNAL_
 #include "Femto"
 
 namespace Graphics {
@@ -264,5 +263,3 @@ namespace Graphics {
     };
 
 }
-
-#endif

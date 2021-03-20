@@ -1,9 +1,11 @@
 #pragma once
-#ifdef _FEMTO_INTERNAL_
 
 namespace Graphics {
     inline const u16 *palette;
-    inline u32 color;
+
+    inline u32 primaryColor;
+    inline u32 secondaryColor;
+
     inline u8 linePadding = 1;
     inline u8 charPadding = 1;
     inline bool doubleFontSize;
@@ -18,5 +20,4 @@ namespace Graphics {
 
 #ifdef USE_SDL_RENDERER
 #include "SDLRenderer.hpp"
-#endif
 #endif

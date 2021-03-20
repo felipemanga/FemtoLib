@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../include/Femto"
-#include "../include/fonts/tiny5x7.hpp"
 
 #define WEAK          __attribute__ ((weak))
 
@@ -11,12 +10,53 @@ static u32 maxFrameTime = 60;
 static u32 frameRate = 0;
 static u32 allocatedSize = 0;
 
-void initDefaultAudio();
-void initDefaultGraphics();
+namespace Graphics::_drawListInternal {
+WEAK void pixelCopy8BPP(u16* dest, const u8* src, u32 count, const u16* palette) {
+    while(count--){
+        if(u32 c = *src++)
+            *dest = palette[c];
+        dest++;
+    }
+}
+
+WEAK void pixelCopy8BPPA(u16* dest, const u8* src, u32 count, const u16* palette, u32 alpha) {
+    while(count--){
+        if(u32 color = *src++){
+            color = palette[color];
+            u32 bg = *dest;
+            bg = (bg * 0x00010001) & 0x07e0f81f;
+            color = (color * 0x00010001) & 0x07e0f81f;
+            bg += (color - bg) * alpha >> 5;
+            bg &= 0x07e0f81f;
+            *dest = (bg | bg >> 16);
+        }
+        dest++;
+    }
+}
+
+WEAK void pixelCopy8BPPS(u16* dest, const u8* src, u32 count, const u16* palette) {
+    while(count--){
+        *dest++ = palette[*src++];
+    }
+}
+
+WEAK void pixelCopy8BPPAS(u16* dest, const u8* src, u32 count, const u16* palette, u32 alpha) {
+    while(count--){
+        u32 color = *src++;
+        color = palette[color];
+        u32 bg = *dest;
+        bg = (bg * 0x00010001) & 0x07e0f81f;
+        color = (color * 0x00010001) & 0x07e0f81f;
+        bg += (color - bg) * alpha >> 5;
+        bg &= 0x07e0f81f;
+        *dest++ = (bg | bg >> 16);
+    }
+}
+}
 
 WEAK void init() {
-    initDefaultGraphics();
-    initDefaultAudio();
+    Graphics::init(colorFromRGB(0x1155AA));
+    Audio::init();
     setMaxFPS(0);
 }
 
@@ -73,10 +113,9 @@ void delay(u32 milli){
 }
 
 static void run(){
-    showLogo();
-
     updateHandler = update;
     init();
+    showLogo();
 
     auto prevFrame = 0;
     u32 frameCount = 0;
