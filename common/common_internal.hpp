@@ -17,6 +17,7 @@ void initDefaultGraphics();
 WEAK void init() {
     initDefaultGraphics();
     initDefaultAudio();
+    setMaxFPS(0);
 }
 
 WEAK void update() {}
@@ -72,7 +73,6 @@ void delay(u32 milli){
 }
 
 static void run(){
-    setMaxFPS(30);
     showLogo();
 
     updateHandler = update;

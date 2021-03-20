@@ -4,8 +4,8 @@
 namespace Graphics {
     inline const u16 *palette;
     inline u32 color;
-    inline u8 linePadding;
-    inline u8 charPadding;
+    inline u8 linePadding = 1;
+    inline u8 charPadding = 1;
     inline bool doubleFontSize;
 }
 
