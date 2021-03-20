@@ -1,0 +1,35 @@
+#pragma once
+
+#include "../libs/File/File"
+#include "../libs/LibAudio/LibAudio"
+#include "../libs/LibSchedule/LibSchedule"
+#include "../libs/LibLog/LibLog"
+#include "../libs/MemOps/MemOps"
+
+#include "types.hpp"
+#include "constants.hpp"
+
+#define _FEMTO_INTERNAL_
+#include "graphics.hpp"
+#undef _FEMTO_INTERNAL_
+
+enum class Button {
+    A,
+    B,
+    C,
+    D,
+    Up,
+    Down,
+    Left,
+    Right
+};
+
+void initDefaultAudio();
+void initDefaultGraphics();
+u32  getFreeRAM();
+u32  getTime();
+u32  getFPS();
+void setBacklight(f32 brightness);
+void setMaxFPS(u32 fps);
+void delay(u32 milli);
+bool isPressed(Button button);
