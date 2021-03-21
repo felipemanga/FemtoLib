@@ -33,7 +33,7 @@ namespace Graphics {
             u8 h = *(bitmap + 1);
             u32 scale = (doubleFontSize ? 2 : 1);
             index -= font[2];
-            if (textX > screenWidth) {
+            if (u32(textX) > screenWidth) {
                 textX = 0;
                 textY += h * scale + linePadding;
             }
@@ -44,7 +44,7 @@ namespace Graphics {
             bitmap = bitmap + 4 + index * (w * hbytes + 1);
             uint32_t numBytes = *bitmap++; //first byte of char is the width in bytes
 
-            if(textY >= screenHeight || textY + h*scale < 0 || textX >= screenWidth || textX + w*scale < 0) {
+            if(u32(textY) >= screenHeight || textY + h*scale < 0 || u32(textX) >= screenWidth || textX + w*scale < 0) {
                 textX += numBytes * scale + charPadding;
                 return;
             }
@@ -57,7 +57,7 @@ namespace Graphics {
                         int x = s.x;
                         u32 fg = s.s;
                         int numBytes = s.b1;
-                        if( s.b1 + x > screenWidth )
+                        if( u32(s.b1 + x) > screenWidth )
                             numBytes = screenWidth - x;
 
                         uint8_t hbytes = ((h>>3) + ((h != 8) && (h != 16))) == 2;
@@ -78,7 +78,7 @@ namespace Graphics {
                         int x = s.x;
                         u32 c = s.s;
                         int numBytes = s.b1;
-                        if( (s.b1<<1) + x > screenWidth )
+                        if( u32((s.b1<<1) + x) > screenWidth )
                             numBytes = (screenWidth - x) >> 1;
 
                         uint8_t hbytes = ((h>>3) + ((h != 8) && (h != 16))) == 2;
@@ -99,11 +99,11 @@ namespace Graphics {
             add(Cmd{
                     .data = bitmap,
                     .draw = f,
-                    .x = textX,
-                    .y = textY,
-                    .maxY = h,
-                    .b1 = numBytes,
-                    .s = primaryColor
+                    .x = decl_cast(Cmd::x, textX),
+                    .y = decl_cast(Cmd::y, textY),
+                    .maxY = decl_cast(Cmd::maxY, h),
+                    .b1 = decl_cast(Cmd::b1, numBytes),
+                    .s = decl_cast(Cmd::s, primaryColor)
                 });
 
             textX += numBytes * scale + charPadding;
@@ -125,7 +125,7 @@ namespace Graphics {
             }else if(s.x > 0){
                 line += s.x;
             }
-            if(s.x + w >= screenWidth){
+            if(u32(s.x + w) >= screenWidth){
                 w = (screenWidth) - s.x;
             }
 
@@ -133,7 +133,7 @@ namespace Graphics {
             w >>= 3;
             u32 alpha = s.b1;
 
-            if (alpha != (0xFF + 4 >> 3)) {
+            if (alpha != ((0xFF + 4) >> 3)) {
                 while (w--) {
                     u32 b = *src++;
                     for (s32 i=7; i>=0; --i, b >>= 1) {
@@ -205,13 +205,13 @@ namespace Graphics {
             }else if(s.x > 0){
                 line += s.x;
             }
-            if(s.x + w >= screenWidth){
+            if(u32(s.x + w) >= screenWidth){
                 w = screenWidth - s.x;
             }
 
             auto palette = reinterpret_cast<const u16 *>(s.udata);
             u32 alpha = s.b1;
-            if (alpha != (0xFF + 4 >> 3)) {
+            if (alpha != ((0xFF + 4) >> 3)) {
                 if (isTransparent)
                     pixelCopy8BPPA(line, src, w, palette, alpha);
                 else
@@ -429,7 +429,7 @@ namespace Graphics {
                 maxY += sb.y;
                 if(maxY < 0)
                     return;
-                if(maxY > screenHeight)
+                if(u32(maxY) > screenHeight)
                     maxY = screenHeight;
                 sb.maxY = maxY;
                 _end++;
@@ -509,7 +509,7 @@ namespace Graphics {
                     auto& s = cmdBuffer[i];
                     if( s.y > y ) continue;
 
-                    int smaxY = s.maxY;
+                    u32 smaxY = s.maxY;
                     if( smaxY <= y ){
                         continue;
                     }
@@ -629,8 +629,8 @@ namespace Graphics {
             error = std::abs(dx << 15) / dy;
             f  = +[](u16 *line, Cmd &s, u32 y){
                       s32 x = s.x;
-                      if (x >= 0 && x < screenWidth) {
-                          line[x] = reinterpret_cast<u32>(s.data);
+                      if (x >= 0 && u32(x) < screenWidth) {
+                          line[x] = reinterpret_cast<uptr>(s.data);
                       }
                       if ((((y - 1 - s.y) * u32(s.s) + (1<<14)) >> 15) != (((y - s.y) * u32(s.s) + (1<<14)) >> 15)) {
                           s.x += s8(s.b2);
@@ -647,25 +647,24 @@ namespace Graphics {
                          s32 x = s.x;
                          s.b1--;
                          s.x += stride;
-                         if (x >= 0 && x < screenWidth) {
-                             line[x] = reinterpret_cast<u32>(s.data);
+                         if (x >= 0 && u32(x) < screenWidth) {
+                             line[x] = reinterpret_cast<uptr>(s.data);
                          };
                      }
                  };
         } else return;
 
-        add(Cmd{
+        Cmd cmd{
                 .data = reinterpret_cast<void*>(color),
                 .draw = f,
-                .x = x,
-                .y = y,
-                .maxY = dy + 1,
-                .b1 = std::abs(dx),
-                {{
-                    .b2 = (x < ex) ? 1 : -1,
-                    .s = error
-                }}
-            });
+                .x = decl_cast(Cmd::x, x),
+                .y = decl_cast(Cmd::y, y),
+                .maxY = decl_cast(Cmd::maxY, dy + 1),
+                .b1 = decl_cast(Cmd::b1, std::abs(dx)),
+        };
+        cmd.b2 = decl_cast(Cmd::b2, (x < ex) ? 1 : -1);
+        cmd.s = decl_cast(Cmd::s, error);
+        add(cmd);
     }
 
     inline void fillRect(s32 x, s32 y, s32 w, s32 h, u32 color = Graphics::primaryColor) {
@@ -673,15 +672,14 @@ namespace Graphics {
         // LOG(x, y, w, h, color, "\n");
 
         if(x < 0){ w += x; x = 0; }
-        if(x + w >= screenWidth) w = screenWidth - x;
+        if(u32(x + w) >= screenWidth) w = screenWidth - x;
         if(y < 0){ h += y; y = 0; }
-        if(y >= screenHeight || y + h < 0 || x >= screenWidth || x + w < 0)
+        if(u32(y) >= screenHeight || y + h < 0 || u32(x) >= screenWidth || x + w < 0)
             return;
 
         draw_t f = [](u16 *line, Cmd &s, u32 y){
                        auto c = reinterpret_cast<uptr>(s.data);
                        int w = s.b1;
-                       int sx = 0;
                        line += s.x;
                        while(w--){
                            *line++ = c;
@@ -691,10 +689,10 @@ namespace Graphics {
         add(Cmd{
                 .data = reinterpret_cast<void*>(color),
                 .draw = f,
-                .x = x,
-                .y = y,
-                .maxY = h,
-                .b1 = w
+                .x = decl_cast(Cmd::x, x),
+                .y = decl_cast(Cmd::y, y),
+                .maxY = decl_cast(Cmd::maxY, h),
+                .b1 = decl_cast(Cmd::b1, w)
             });
     }
 
@@ -702,11 +700,11 @@ namespace Graphics {
     inline void draw(const u8 *data, s32 x = 0, s32 y = 0, f32 falpha = 1){
         using namespace _drawListInternal;
 
-        if (x + data[0] <= 0 || x >= screenWidth) return;
-        if (y + data[1] <= 0 || y >= screenHeight) return;
+        if (x + data[0] <= 0 || u32(x) >= screenWidth) return;
+        if (y + data[1] <= 0 || u32(y) >= screenHeight) return;
 
         u8 alpha = round(falpha * 255);
-        alpha = u32(alpha) + 4 >> 3;
+        alpha = (u32(alpha) + 4) >> 3;
         auto f = blitBitPlane;
         auto udata = reinterpret_cast<uptr>(palette);
 
@@ -714,7 +712,7 @@ namespace Graphics {
         case 1:
             f = blit1BPP<transparent>;
             udata = primaryColor | (secondaryColor << 16);
-            if (alpha != (0xFF + 4 >> 3)) {
+            if (alpha != ((0xFF + 4) >> 3)) {
                 udata = (udata | udata << 16) & 0x07e0f81f;
             }
             break;
@@ -727,15 +725,16 @@ namespace Graphics {
             break;
         }
 
-        add(Cmd{
+        Cmd cmd{
                 .data = data,
                 .draw = f,
-                .x = x,
-                .y = y,
+                .x = decl_cast(Cmd::x, x),
+                .y = decl_cast(Cmd::y, y),
                 .maxY = data[1],
-                .b1 = alpha,
-                .udata = udata
-            });
+                .b1 = decl_cast(Cmd::b1, alpha)
+                };
+        cmd.udata = udata;
+        add(cmd);
     }
 
     inline void clear(){

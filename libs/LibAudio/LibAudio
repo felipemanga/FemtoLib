@@ -101,9 +101,7 @@ namespace Audio {
 
 #if defined(TARGET_LPC11U6X)
 #include "./PokittoHWSink.hpp"
-#endif
-
-#if defined(POK_SIM)
+#else
 #include "./PokittoSimSink.hpp"
 #endif
 

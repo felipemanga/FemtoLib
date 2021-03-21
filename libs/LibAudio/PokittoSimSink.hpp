@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL2/SDL.h>
+
 extern SDL_AudioDeviceID audioDevice;
 
 namespace Audio {
@@ -47,28 +49,26 @@ namespace Audio {
             if(this->wasInit)
                 return;
             this->wasInit = true;
-
+#ifdef POK_SIM
             Audio::setVolume(Pokitto::Sound::globalVolume);
+#endif
 
             this->channels[0].source =
                 +[](u8 *buffer, void *ptr){
                      MemOps::set(buffer, 128, 512);
                  };
 
-            for(int i=1; i<channelCount; ++i){
+            for(u32 i=1; i<channelCount; ++i){
                 this->channels[i].source = nullptr;
             }
 
-            for(int i=0; i<bufferCount; ++i){
+            for(u32 i=0; i<bufferCount; ++i){
                 audio_state[i] = 0;
             }
             audio_playHead = 0;
 
-            // SDL_PauseAudioDevice(audioDevice, 1);
-            // SDL_CloseAudioDevice(audioDevice);
-
             SDL_AudioSpec wanted;
-            SDL_memset(&wanted, 0, sizeof(wanted)); /* or SDL_zero(want) */
+            SDL_memset(&wanted, 0, sizeof(wanted));
             wanted.freq = sampleRate;
             wanted.format = AUDIO_U8;
             wanted.channels = 1;

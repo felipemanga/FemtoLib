@@ -129,12 +129,13 @@ namespace Graphics {
 
     template <
         typename Arg,
-        typename ... Args,
-        std::enable_if_t<sizeof...(Args), int> = 0
+        typename ... Args
         >
     void print(const Arg& arg, const Args& ... args){
         print(arg);
-        print(args...);
+        if constexpr (sizeof...(args) != 0) {
+            print(args...);
+        }
     }
 
     template <

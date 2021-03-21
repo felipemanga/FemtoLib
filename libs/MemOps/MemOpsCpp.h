@@ -15,14 +15,14 @@ public:
     static void set(void* dst, std::uint8_t val, std::size_t count) {
         //std::memset ( dst, val, count );
         auto d = static_cast<uint8_t*>(dst);
-        for(int i = 0; i < count; i++) {
+        for(std::size_t i = 0; i < count; i++) {
             d[i] = val;
         }
     }
 
     static void set(void* dst, std::uint8_t val, std::size_t count, std::size_t stride) {
         auto d = static_cast<std::uint8_t*>(dst);
-        for (int i = 0; i < count; i += stride) {
+        for (std::size_t i = 0; i < count; i += stride) {
             *d = val;
             d += stride;
         }

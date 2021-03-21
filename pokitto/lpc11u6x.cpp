@@ -37,6 +37,14 @@ u32 getFreeRAM() {
     return ptr_t(&top) - ptr_t(&_pvHeapStart) - allocatedSize;
 }
 
+void delay(u32 milli){
+    u32 micro = milli * 1000;
+    u32 start = getTimeMicro();
+    while((getTimeMicro() - start) < micro) {
+        Schedule::runUpdateHooks(false, getTime());
+    }
+}
+
 uint32_t SystemCoreClock = 72'000'000;
 
 u32 getTime() {
@@ -232,7 +240,7 @@ extern "C" {
         LPC_SCT0->EV1_STATE = 0xFFFFFFFF;
         LPC_SCT0->MATCHREL0 = 20000;
 
-        run();
+        blockingRun();
     }
 
     AFTER_VECTORS void NMI_Handler       (void) {}

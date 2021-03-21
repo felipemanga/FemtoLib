@@ -4,7 +4,7 @@
 #include "Pokitto_settings.h"
 #endif
 
-#ifdef POK_SIM
+#if !defined(POKITTO) && !defined(PROJ_YAPFS_STREAMING)
 #include "./SIMFile.h"
 #elif defined(PROJ_SDFS_STREAMING)
 #include "./SDFSFile.h"

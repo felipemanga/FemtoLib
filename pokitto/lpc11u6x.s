@@ -142,7 +142,6 @@
 .global _ZN8Graphics17_drawListInternal15pixelCopy8BPPASEPtPKhmPKtm
 
         // LCD output
-
 .func flushLine16
 flushLine16:
 LINE .req r0

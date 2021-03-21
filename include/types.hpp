@@ -2,6 +2,11 @@
 
 #include <cstdint>
 
+#ifdef random
+#undef random
+#endif
+#define random femto_random
+
 #define FIXED_POINTS_USE_NAMESPACE
 #define FIXED_POINTS_NO_RANDOM
 
@@ -9,6 +14,8 @@
 
 using f32 = FixedPoints::SFixed<23, 8>;
 using uptr = std::uintptr_t;
+using u64 = std::uint64_t;
+using s64 = std::int64_t;
 using u32 = std::uint32_t;
 using s32 = std::int32_t;
 using u16 = std::uint16_t;
@@ -25,6 +32,8 @@ enum class BitmapFormat {
     FullColor
 };
 
+#define decl_cast(type, value) static_cast<decltype(type)>(value)
+
 inline constexpr s32 round(f32 v){
     return (v.getInternal() + (1 << 7)) >> 8;
 }
@@ -39,7 +48,7 @@ inline constexpr s32 ceil(f32 v){
     return i >> 8;
 }
 
-inline u32 random(u32 seed = 0) {
+inline u32 femto_random(u32 seed = 0) {
     static u32 _rngState = 0;
     if (seed) _rngState = seed;
     extern u32 getTime();

@@ -16,6 +16,7 @@
 #endif
 
 #ifndef USART
+#include <cstdio>
 
 inline void LOG( char c ){
     putchar(c);
@@ -146,9 +147,6 @@ void LOGD(const Arg& arg, const Args& ... args){
 #endif
 }
 
-#ifndef RELEASE
-#define BREAKPOINT
-
 #define LOG1(...)               \
     {                           \
         static bool _f_=false;  \
@@ -157,12 +155,8 @@ void LOGD(const Arg& arg, const Args& ... args){
             LOG(__VA_ARGS__);   \
         }                       \
     }
-#else
+
 #define BREAKPOINT
-#define LOG1(...) {}
-#endif
-
-
 
 #else
 
@@ -303,9 +297,6 @@ void OPT_SMALL LOGD(const Arg& arg, const Args& ... args){
 #endif
 }
 
-#ifndef RELEASE
-#define BREAKPOINT __asm__ volatile ("bkpt #1")
-
 #define LOG1(...)               \
     {                           \
         static bool _f_=false;  \
@@ -314,9 +305,11 @@ void OPT_SMALL LOGD(const Arg& arg, const Args& ... args){
             LOG(__VA_ARGS__);   \
         }                       \
     }
+
+#ifndef RELEASE
+#define BREAKPOINT __asm__ volatile ("bkpt #1")
 #else
 #define BREAKPOINT
-#define LOG1(...) {}
 #endif
 
 #endif
