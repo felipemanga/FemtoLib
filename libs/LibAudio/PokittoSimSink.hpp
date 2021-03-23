@@ -1,6 +1,23 @@
 #pragma once
 
+#ifdef TARGET_SDL2
+
 #include <SDL2/SDL.h>
+
+#elif TARGET_SDL1
+
+#include <SDL.h>
+
+using SDL_AudioDeviceID = int;
+inline SDL_AudioDeviceID SDL_OpenAudioDevice(void*, int, SDL_AudioSpec *desired, void*, int){
+    desired->format = AUDIO_S8;
+    return SDL_OpenAudio(desired, NULL);
+}
+inline void SDL_PauseAudioDevice(SDL_AudioDeviceID, int pause){
+    SDL_PauseAudio(pause);
+}
+
+#endif
 
 extern SDL_AudioDeviceID audioDevice;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <type_traits>
 
 #ifdef random
 #undef random
@@ -31,6 +32,24 @@ enum class BitmapFormat {
     Indexed8BPP,
     FullColor
 };
+
+template<u32 size = 64>
+struct _umin { using type = u64; };
+
+template<>
+struct _umin<4> { using type = u32; };
+
+template<>
+struct _umin<2> { using type = u16; };
+
+template<>
+struct _umin<1> { using type = u8; };
+
+template<u64 maxVal>
+using umin = typename _umin<(maxVal >> 32) ? 8 :
+                                (maxVal >> 16) ? 4 :
+                                (maxVal >> 8) ? 2 :
+                                1>::type;
 
 #define decl_cast(type, value) static_cast<decltype(type)>(value)
 

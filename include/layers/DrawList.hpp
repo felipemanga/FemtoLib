@@ -9,8 +9,9 @@ namespace Graphics {
         struct Cmd {
             const void *data;
             draw_t draw;
-            u8 x, y;
-            u8 maxY;
+            umin<screenWidth> x;
+            umin<screenHeight> y;
+            umin<screenHeight> maxY;
             u8 b1;
             union {
                 struct {
