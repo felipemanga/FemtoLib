@@ -1,9 +1,61 @@
 #include "../common/common_internal.hpp"
+extern "C" void __wrap_exit( int num );
 
 using Reg = volatile u32*;
 
 inline bool menuButton(){
-    return *reinterpret_cast<volatile char*>(0xA0000000 + 1*0x20 + 10);
+    static u32 pressTime = 0;
+    if (*reinterpret_cast<volatile char*>(0xA0000000 + 1*0x20 + 10)) {
+        u32 now = getTime();
+        if(!pressTime) pressTime = now;
+        return (now - pressTime > 2000);
+    } else pressTime = 0;
+    return false;
+}
+
+static void showMenu(){
+    File menu;
+    u32 opts;
+    u32 oldopts = ~u32{};
+
+    bool ignoreC = true;
+    menu.openRO("data/menu.i16");
+    while(true){
+        opts = 0;
+        if (volume && Audio::internal::sinkInstance) opts |= 1 << 0;
+
+        if (opts != oldopts) {
+            oldopts = opts;
+            menu.seek(opts * screenWidth * screenHeight * 2);
+            streamI16(menu);
+        }
+
+        if (isPressed(Button::A)) {
+            while(isPressed(Button::A));
+            if (Audio::internal::sinkInstance) {
+                Audio::setVolume(volume << 8);
+            }
+            return;
+        }
+
+        if (isPressed(Button::B)) {
+            while(isPressed(Button::B));
+            return;
+        }
+
+        if(isPressed(Button::C)){
+            if (!ignoreC)
+                __wrap_exit(0);
+        } else ignoreC = false;
+
+        if(isPressed(Button::Up))
+            volume = 1;
+
+        if(isPressed(Button::Down))
+            volume = 0;
+
+        delay(10);
+    }
 }
 
 static volatile u32 pt_count = 0;
@@ -61,7 +113,6 @@ extern "C" {
     extern void _vStackTop(void);
     unsigned int malloc_usable_size( void * );
     void software_init_hook(void) __attribute__((weak));
-    void __wrap_exit( int num );
 
 #define ALIAS(f)      __attribute__ ((weak, alias (#f)))
 #define AFTER_VECTORS __attribute__ ((section(".after_vectors")))void ResetISR(void);
@@ -240,7 +291,14 @@ extern "C" {
         LPC_SCT0->EV1_STATE = 0xFFFFFFFF;
         LPC_SCT0->MATCHREL0 = 20000;
 
-        blockingRun();
+        updateHandler = update;
+        init();
+        showLogo();
+        while(true){
+            if (menuButton())
+                showMenu();
+            updateLoop();
+        }
     }
 
     AFTER_VECTORS void NMI_Handler       (void) {}

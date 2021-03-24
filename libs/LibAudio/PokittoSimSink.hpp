@@ -10,7 +10,6 @@
 
 using SDL_AudioDeviceID = int;
 inline SDL_AudioDeviceID SDL_OpenAudioDevice(void*, int, SDL_AudioSpec *desired, void*, int){
-    desired->format = AUDIO_S8;
     return SDL_OpenAudio(desired, NULL);
 }
 inline void SDL_PauseAudioDevice(SDL_AudioDeviceID, int pause){

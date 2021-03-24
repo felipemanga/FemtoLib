@@ -77,7 +77,7 @@ static void* updateEvents(bool isFrame) {
         } else if(e.type == SDL_JOYAXISMOTION) {
             static int px = 0, py = 0;
             int x = 0, y = 0;
-            const int deadzone = 1000;
+            const int deadzone = 10000;
 
             if( e.jaxis.axis == 0)
             {

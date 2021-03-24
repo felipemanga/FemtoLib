@@ -15,7 +15,6 @@ namespace Graphics {
     }
 
     inline void print( char c ){
-        LOG(c);
         _graphicsInternal::_print(c);
     }
 

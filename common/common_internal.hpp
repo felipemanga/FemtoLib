@@ -6,6 +6,7 @@
 
 extern "C" void SystemInit();
 
+static u8 volume = 1;
 static u32 maxFrameTime = 60;
 static u32 frameRate = 0;
 static u32 allocatedSize = 0;
@@ -72,6 +73,13 @@ u32 getFPS(){
 void setMaxFPS(u32 fps) {
     maxFrameTime = fps ? round(f32(1'000'000) / f32(fps)) : 0;
     frameRate = fps;
+}
+
+void streamI16(File &file) {
+    u16 line[screenWidth];
+    for (u32 y=0; y<screenHeight && file.read(line); ++y) {
+        flushLine16(line);
+    }
 }
 
 #include "logo.hpp"

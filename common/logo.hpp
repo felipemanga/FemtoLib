@@ -16,23 +16,22 @@ WEAK void showLogo(){
     constexpr u32 frameSize = screenWidth * screenHeight * 2;
     u32 frameCount = size / frameSize;
     logo.seek(random(0, frameCount) * frameSize);
-    u16 line[screenWidth];
-    for (u32 y=0; y<screenHeight && logo.read(line); ++y) {
-        flushLine16(line);
-    }
-
+    streamI16(logo);
     for (f32 lum = 0; lum < 1; lum += f32(0.02)) {
         setBacklight(lum);
         delay(10);
     }
 
-    logo.openRO("data/logo.raw");
-    if (!logo || !Audio::internal::sinkInstance)
+    if (Audio::internal::sinkInstance) {
+        logo.openRO("data/logo.raw");
+        Audio::setVolume(volume << 8);
+    }
+
+    if (!logo){
         delay(2000);
-    else {
+    } else {
         auto& src = Audio::play<0>(logo);
         src.setLoop(false);
-        Audio::setVolume(1<<8);
         while (!src.ended() && !isPressed(Button::C)) {
             delay(30);
         }
