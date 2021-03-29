@@ -23,8 +23,14 @@ struct LineFiller {
     constexpr LineFiller(Class* obj) :
         data(reinterpret_cast<uptr>(obj)),
         update(+[](u16 *line, u32 y, uptr data){
-                    reinterpret_cast<Class*>(data)->update(line, y);
-                }) {}
+            auto obj = reinterpret_cast<Class*>(data);
+            if constexpr (std::is_member_function_pointer<decltype(&Class::update)>::value) {
+                reinterpret_cast<Class*>(data)->update(line, y);
+            } else {
+                auto update = obj->update;
+                (obj->*update)(line, y);
+            }
+        }) {}
 
     template <typename Class>
     constexpr LineFiller(Class& obj) : LineFiller(&obj) {}
@@ -71,6 +77,7 @@ public:
 
 #include "layers/solidColor.hpp"
 #include "layers/DrawList.hpp"
+#include "layers/RotoZoom.hpp"
 #include "fonts/tiny5x7.hpp"
 
 namespace Graphics {

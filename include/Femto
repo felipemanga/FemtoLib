@@ -8,6 +8,7 @@
 #include "../libs/LibAudio/LibAudio"
 #include "../libs/LibSchedule/LibSchedule"
 #include "../libs/LibLog/LibLog"
+#include "../libs/LibTrig/LibTrig"
 #include "../libs/MemOps/MemOps"
 
 #include "types.hpp"

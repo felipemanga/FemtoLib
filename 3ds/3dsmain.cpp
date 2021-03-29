@@ -75,8 +75,6 @@ static void* updateEvents(bool isFrame) {
             case 4: buttonState<Button::D> = isDown; break;
             }
         } else if(e.type == SDL_JOYAXISMOTION) {
-            static int px = 0, py = 0;
-            int x = 0, y = 0;
             const int deadzone = 10000;
 
             if( e.jaxis.axis == 0)
@@ -148,7 +146,7 @@ int main(){
         joysticks[i] = SDL_JoystickOpen(i);
     }
 
-    screen = SDL_SetVideoMode(screenWidth, screenHeight, 16, SDL_SWSURFACE|SDL_BOTTOMSCR/*SDL_DUALSCR*/|SDL_FITHEIGHT); // SDL_HWSURFACE);
+    screen = SDL_SetVideoMode(screenWidth, screenHeight, 16, SDL_SWSURFACE|/*SDL_TOPSCR/*/SDL_DUALSCR/**/|SDL_FITHEIGHT); // SDL_HWSURFACE);
 
     if (!screen) {
         LOG("No window surface\n");

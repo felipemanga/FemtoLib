@@ -72,7 +72,7 @@ public:
             return;
         }
 
-        if(textX >= columns || textY >= rows){
+        if(u32(textX) >= columns || u32(textY) >= rows){
             newline();
         }
 
@@ -90,7 +90,7 @@ public:
     void newline(){
         textX = 0;
         textY++;
-        if(textY >= rows){
+        if(u32(textY) >= rows){
             textY = rows - 1;
             scrollUp();
         }
@@ -121,7 +121,7 @@ public:
                     bitcolumn |= (*bitmap++) << 8;
                 }
                 if ((bitcolumn >> shift) & 1) {
-                    *line = color;
+                    *line = primaryColor;
                 }
             }
             line += fontWidth - gliphWidth;

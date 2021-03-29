@@ -16,7 +16,7 @@ WEAK void showLogo(){
     constexpr u32 frameSize = screenWidth * screenHeight * 2;
     u32 frameCount = size / frameSize;
     logo.seek(random(0, frameCount) * frameSize);
-    streamI16(logo);
+    streamI16(logo, 220, 176, 0xFFFF);
     for (f32 lum = 0; lum < 1; lum += f32(0.02)) {
         setBacklight(lum);
         delay(10);

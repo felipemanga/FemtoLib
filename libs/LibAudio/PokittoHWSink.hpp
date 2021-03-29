@@ -9,7 +9,7 @@ namespace Audio {
 
     inline void setVolume(u32 v){
         v = 255 - (192 - v) * (192 - v) * 255 / 36864;
-#if defined(POKITTO)
+#if defined(POKITTO) || defined(POKITTO_CLASSIC)
         u32 hwVolume = v ? (v>>1) | 0xF : 0;
         u32 swVolume = v ? (v | 0xF) + 1 : 0;
         SoftwareI2C(P0_4, P0_5).write(0x5e, hwVolume);

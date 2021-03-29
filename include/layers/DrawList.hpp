@@ -668,6 +668,12 @@ namespace Graphics {
         add(cmd);
     }
 
+    inline void line(Point2D start, Point2D end, u32 color = Graphics::primaryColor) {
+        start -= camera;
+        end -= camera;
+        line(round(start.x), round(start.y), round(end.x), round(end.y), color);
+    }
+
     inline void fillRect(s32 x, s32 y, s32 w, s32 h, u32 color = Graphics::primaryColor) {
         using namespace _drawListInternal;
         // LOG(x, y, w, h, color, "\n");
@@ -675,7 +681,7 @@ namespace Graphics {
         if(x < 0){ w += x; x = 0; }
         if(u32(x + w) >= screenWidth) w = screenWidth - x;
         if(y < 0){ h += y; y = 0; }
-        if(u32(y) >= screenHeight || y + h < 0 || u32(x) >= screenWidth || x + w < 0)
+        if(u32(y) >= screenHeight || y + h <= 0 || u32(x) >= screenWidth || (x + w) <= 0)
             return;
 
         draw_t f = [](u16 *line, Cmd &s, u32 y){
@@ -695,6 +701,17 @@ namespace Graphics {
                 .maxY = decl_cast(Cmd::maxY, h),
                 .b1 = decl_cast(Cmd::b1, w)
             });
+    }
+
+    inline void fillRect(Point2D topLeft, Point2D bottomRight, u32 color = Graphics::primaryColor) {
+        topLeft -= camera;
+        bottomRight -= camera;
+        fillRect(round(topLeft.x), round(topLeft.y), round(bottomRight.x - topLeft.x), round(bottomRight.y - topLeft.y), color);
+    }
+
+    inline void fillRect(Point2D topLeft, Size2D size, u32 color = Graphics::primaryColor) {
+        topLeft -= camera;
+        fillRect(round(topLeft.x), round(topLeft.y), round(size.w), round(size.h), color);
     }
 
     template <u32 bits, bool transparent = false>
@@ -736,6 +753,12 @@ namespace Graphics {
                 };
         cmd.udata = udata;
         add(cmd);
+    }
+
+    template <u32 bits, bool transparent = false>
+    inline void draw(const u8 *data, Point2D topLeft, f32 falpha = 1){
+        topLeft -= camera;
+        draw<bits, transparent>(data, round(topLeft.x), round(topLeft.y), falpha);
     }
 
     inline void clear(){

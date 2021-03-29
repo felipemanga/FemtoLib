@@ -10,15 +10,16 @@
 #define USE_SCANLINE_RENDERER
 #endif
 
-#if defined(POK_SIM)
-#define USE_SDL_RENDERER
-#endif
-
 #if defined(LCD_ST7775)
 #define SCREEN_WIDTH 220
 #define SCREEN_HEIGHT 176
 #define SCREEN_565
+// #elif defined(TARGET_3DS)
+// #define SCREEN_WIDTH 400
+// #define SCREEN_HEIGHT 240
+// #define SCREEN_565
 #endif
+
 
 #ifdef TARGET_SDL
 #include <SDL2/SDL.h>
@@ -43,7 +44,7 @@ inline constexpr u32 colorFromRGB(u8 R, u8 G, u8 B){
 
 inline constexpr u32 blendColors(u32 fg, u32 bg, f32 falpha) {
     // Alpha converted from [0..255] to [0..31]
-    u32 alpha = falpha.getInternal() + 4;
+    u32 alpha = f32ToS24q8(falpha) + 4;
     alpha >>= 3;
     fg = (fg | fg << 16) & 0x07e0f81f;
     bg = (bg | bg << 16) & 0x07e0f81f;

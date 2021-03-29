@@ -9,9 +9,13 @@ namespace Graphics {
 
     inline s32 textX, textY;
 
-    inline void setTextXY(f32 x, f32 y){
+    inline void setCursor(f32 x, f32 y){
         textX = round(x / f32(_graphicsInternal::_textXScale));
         textY = round(y / f32(_graphicsInternal::_textYScale));
+    }
+
+    inline void setCursor(Point2D point){
+        setCursor(point.x, point.y);
     }
 
     inline void print( char c ){

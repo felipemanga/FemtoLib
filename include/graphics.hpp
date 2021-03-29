@@ -9,6 +9,8 @@ namespace Graphics {
     inline u8 linePadding = 1;
     inline u8 charPadding = 1;
     inline bool doubleFontSize;
+
+    inline Point2D camera;
 }
 
 #include "general.hpp"

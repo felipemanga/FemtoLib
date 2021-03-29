@@ -75,9 +75,38 @@ void setMaxFPS(u32 fps) {
     frameRate = fps;
 }
 
-void streamI16(File &file) {
+void streamI16(File &file, u32 frameWidth = screenWidth, u32 frameHeight = screenHeight, u32 fillColor = 0) {
     u16 line[screenWidth];
-    for (u32 y=0; y<screenHeight && file.read(line); ++y) {
+    s32 y = screenHeight/2 - frameHeight/2, max = frameHeight;
+    s32 x = screenWidth/2 - frameWidth/2;
+    if (y < 0) {
+        y = 0;
+    }
+
+    if (x < 0) {
+        frameWidth = screenWidth;
+        x = 0;
+    }
+
+    if (x || y) {
+        for (u32 i = 0; i < screenWidth; ++i) {
+            line[i] = fillColor;
+        }
+        for (s32 i = 0; i < y; ++i) {
+            flushLine16(line);
+        }
+        max = std::min(y + frameHeight, screenHeight);
+    }
+
+    for (; y<max && file.read(line + x, frameWidth * 2); ++y) {
+        flushLine16(line);
+    }
+
+    for (u32 i = 0; i < screenWidth; ++i) {
+        line[i] = fillColor;
+    }
+
+    for (;u32(y) < screenHeight; ++y) {
         flushLine16(line);
     }
 }

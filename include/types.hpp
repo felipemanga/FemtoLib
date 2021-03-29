@@ -2,18 +2,8 @@
 
 #include <cstdint>
 #include <type_traits>
+#include <array>
 
-#ifdef random
-#undef random
-#endif
-#define random femto_random
-
-#define FIXED_POINTS_USE_NAMESPACE
-#define FIXED_POINTS_NO_RANDOM
-
-#include <FixedPoints/FixedPoints.h>
-
-using f32 = FixedPoints::SFixed<23, 8>;
 using uptr = std::uintptr_t;
 using u64 = std::uint64_t;
 using s64 = std::int64_t;
@@ -25,25 +15,10 @@ using u8 = std::uint8_t;
 using s8 = std::int8_t;
 using c8 = char;
 
-enum class BitmapFormat {
-    Indexed1BPP,
-    Indexed2BPP,
-    Indexed4BPP,
-    Indexed8BPP,
-    FullColor
-};
-
-template<u32 size = 64>
-struct _umin { using type = u64; };
-
-template<>
-struct _umin<4> { using type = u32; };
-
-template<>
-struct _umin<2> { using type = u16; };
-
-template<>
-struct _umin<1> { using type = u8; };
+template<u32 size = 64> struct _umin { using type = u64; };
+template<> struct _umin<4> { using type = u32; };
+template<> struct _umin<2> { using type = u16; };
+template<> struct _umin<1> { using type = u8; };
 
 template<u64 maxVal>
 using umin = typename _umin<(maxVal >> 32) ? 8 :
@@ -52,6 +27,112 @@ using umin = typename _umin<(maxVal >> 32) ? 8 :
                                 1>::type;
 
 #define decl_cast(type, value) static_cast<decltype(type)>(value)
+
+template<std::size_t count>
+class u4 : public std::array<u8, count> {
+public:
+    constexpr u4(const std::array<u8, count>& in) : u4::array(in) {}
+
+    constexpr operator const u8* () const {
+        return ptr();
+    }
+
+    constexpr u8 operator [] (u32 index) const {
+        return index & 1
+            ? u4::array::operator[](index >> 1) & 0xF
+            : u4::array::operator[](index >> 1) >> 4;
+    }
+
+    const u8* ptr() const {
+        return u4::array::data();
+    }
+
+    void set(u32 index, u32 value) {
+        u32 old = u4::array::operator[](index >> 1);
+        if (index & 1) {
+            old &= 0x0F;
+            value <<= 4;
+        } else {
+            old &= 0xF0;
+        }
+        u4::array::operator[](index >> 1) = old | value;
+    }
+};
+
+template <typename ... Arg>
+inline constexpr u4<sizeof...(Arg)/2> U4(Arg ... arg) {
+    std::array<int, sizeof...(Arg)> in = {static_cast<int>(arg)...};
+    std::array<u8, sizeof...(Arg)/2> out = {};
+    u32 i = 0;
+    u32 acc = 0;
+    for(auto v : in){
+        if (!(i & 1)) {
+            acc = v << 4;
+        } else {
+            acc |= v;
+            out[i >> 1] = acc;
+        }
+        i++;
+    }
+    return out;
+}
+
+template <typename ... Arg>
+inline constexpr std::array<u8, sizeof...(Arg)> U8(Arg ... arg) {
+    return std::array<u8, sizeof...(Arg)>{ static_cast<u8>(arg)... };
+};
+
+#ifndef NO_FLOAT
+
+#include <math.h>
+
+using f32 = float;
+
+inline constexpr s32 f32ToS24q8(f32 f){
+    return f * 256;
+}
+
+inline constexpr f32 s24q8ToF32(s32 s){
+    return s / 256.0f;
+}
+
+inline constexpr f32 PI = 3.1415926535897932384626433832795028841971f;
+
+inline constexpr f32 toRadians(f32 deg){
+    return deg * PI / 180.0f;
+}
+
+#else
+
+#define FIXED_POINTS_USE_NAMESPACE
+#define FIXED_POINTS_NO_RANDOM
+#include <FixedPoints/FixedPoints.h>
+using f32 = FixedPoints::SFixed<23, 8>;
+
+inline constexpr f32 PI = f32::Pi;
+
+inline constexpr s32 f32ToS24q8(f32 f){
+    return f.getInternal();
+}
+
+inline constexpr f32 s24q8ToF32(s32 s){
+    return f32::fromInternal(s);
+}
+
+inline constexpr f32 sin(f32 rad) {
+    using trig = Trig<(f32::Pi/2).getInternal(), 255>;
+    return f32::fromInternal(trig::sin(rad.getInternal()));
+}
+
+inline constexpr f32 cos(f32 rad) {
+    using trig = Trig<(f32::Pi/2).getInternal(), 255>;
+    return f32::fromInternal(trig::cos(rad.getInternal()));
+}
+
+inline constexpr f32 toRadians(f32 deg){
+    constexpr auto iPI = (PI.getInternal() << 8) / 180;
+    return f32::fromInternal(deg.getInternal() * iPI >> 16);
+}
 
 inline constexpr s32 round(f32 v){
     return (v.getInternal() + (1 << 7)) >> 8;
@@ -67,7 +148,101 @@ inline constexpr s32 ceil(f32 v){
     return i >> 8;
 }
 
-inline u32 femto_random(u32 seed = 0) {
+namespace std {
+    inline constexpr f32 abs(f32 v) {
+        return v < 0 ? -v : v;
+    }
+}
+
+#endif
+
+struct Point2D {
+    f32 x, y;
+    void set(f32 x, f32 y){
+        this->x = x;
+        this->y = y;
+    }
+
+    void rotateXY(f32 rad){
+        f32 cr  = cos(rad);
+        f32 sr  = sin(rad);
+        f32 x   = cr * this->x - sr * this->y;
+        this->y = sr * this->x + cr * this->y;
+        this->x = x;
+    }
+
+    Point2D& operator += (const Point2D &other) {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
+
+    Point2D& operator *= (const Point2D &other) {
+        x *= other.x;
+        y *= other.y;
+        return *this;
+    }
+
+    Point2D& operator -= (const Point2D &other) {
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
+
+    template <typename IterableCollection, typename Other>
+    static void add(IterableCollection &points, const Other& other) {
+        for (auto& point : points) {
+            point += other;
+        }
+    }
+
+    template <typename IterableCollection>
+    static void rotateXY(IterableCollection &points, f32 rad) {
+        f32 cr = cos(rad);
+        f32 sr = sin(rad);
+        for (auto& point : points) {
+            f32 x = cr * point.x - sr * point.y;
+            point.y = sr * point.x + cr * point.y;
+            point.x = x;
+        }
+    }
+};
+
+
+struct Point3D : public Point2D {
+    f32 z;
+
+    void rotateXZ(f32 rad){
+        f32 cr = cos(rad);
+        f32 sr = sin(rad);
+        f32 x = cr * this->x - sr * z;
+        z = cr * z + sr * this->x;
+        this->x = x;
+    }
+
+    void rotateYZ(f32 rad){
+        f32 cr = cos(rad);
+        f32 sr = sin(rad);
+        f32 y = cr * this->y - sr * z;
+        z = cr * z + sr * this->y;
+        this->y = y;
+    }
+};
+
+struct Size2D {
+    f32 w, h;
+};
+
+struct Size3D : public Size2D {
+    f32 d;
+};
+
+#ifdef random
+#undef random
+#endif
+#define random femto_random
+
+inline u32 random(u32 seed = 0) {
     static u32 _rngState = 0;
     if (seed) _rngState = seed;
     extern u32 getTime();

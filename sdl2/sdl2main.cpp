@@ -41,7 +41,7 @@ static f32 backlight;
 static void redraw() {
     SDL_UnlockSurface( vscreen );
     SDL_FillRect(screen, nullptr, 0);
-    SDL_SetSurfaceAlphaMod(vscreen, backlight.getInternal());
+    SDL_SetSurfaceAlphaMod(vscreen, f32ToS24q8(backlight));
     SDL_BlitScaled( vscreen, nullptr, screen, nullptr );
     SDL_LockSurface(vscreen);
     SDL_UpdateWindowSurface(window);
