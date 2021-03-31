@@ -28,10 +28,103 @@ using umin = typename _umin<(maxVal >> 32) ? 8 :
 
 #define decl_cast(type, value) static_cast<decltype(type)>(value)
 
-template<std::size_t count>
-class u4 : public std::array<u8, count> {
+template <typename Type>
+using DataReferenceType = typename std::conditional<
+    std::is_pointer_v<Type>,
+    Type,
+    typename std::conditional<
+        std::is_array_v<Type>,
+        std::remove_all_extents_t<Type>*,
+        Type&
+        >::type
+    >::type;
+
+template <typename DataType, typename LUTType>
+class LUT {
 public:
-    constexpr u4(const std::array<u8, count>& in) : u4::array(in) {}
+    DataType data;
+    LUTType lut;
+
+    template <typename _DataType, typename _LUTType>
+    constexpr LUT(const _DataType &data, const _LUTType &lut) :
+        data(data),
+        lut(lut) {}
+
+    template <typename _DataType, typename _LUTType>
+    constexpr LUT(_DataType &&data, _LUTType &&lut) :
+        data(std::move(data)),
+        lut(std::move(lut)) {}
+
+    constexpr auto operator [] (u32 index) const {
+        return lut[data[index]];
+    }
+};
+
+template <typename DataType, typename LUTType>
+LUT(const DataType&, const LUTType&) -> LUT<
+    DataReferenceType<const DataType>,
+    DataReferenceType<const LUTType>
+    >;
+
+template <typename DataType, typename LUTType>
+class PageLUT {
+public:
+    DataType data;
+    LUTType lut;
+    u32 pageSize;
+
+    template <typename _DataType, typename _LUTType>
+    constexpr PageLUT(const _DataType &data, const _LUTType &lut, u32 pageSize) :
+        data(data),
+        lut(lut),
+        pageSize(pageSize) {}
+
+    template <typename _DataType, typename _LUTType>
+    constexpr PageLUT(_DataType &&data, _LUTType &&lut, u32 pageSize) :
+        data(std::move(data)),
+        lut(std::move(lut)),
+        pageSize(pageSize) {}
+
+    constexpr auto operator [] (u32 index) const {
+        return lut + data[index] * pageSize;
+    }
+};
+
+template <typename DataType, typename LUTType>
+PageLUT(const DataType&, const LUTType&, u32) -> PageLUT<
+    DataReferenceType<const DataType>,
+    DataReferenceType<const LUTType>
+    >;
+
+template <typename Type>
+class Data2D {
+public:
+    Type data;
+    u32 width;
+    u32 height;
+
+    auto operator [] (u32 index) const {
+        return data[index];
+    }
+
+    auto get(u32 x, u32 y) const {
+        x %= width; y %= height;
+        return data[y * width + x];
+    }
+};
+
+template <typename Type>
+Data2D(const Type& data, u32, u32) -> Data2D<
+    DataReferenceType<const Type>
+    >;
+
+template <typename Type>
+Data2D(Type&& data, u32, u32) -> Data2D<Type>;
+
+template<std::size_t count>
+class u4Array : public std::array<u8, count> {
+public:
+    constexpr u4Array(const std::array<u8, count>& in) : u4Array::array(in) {}
 
     constexpr operator const u8* () const {
         return ptr();
@@ -39,28 +132,28 @@ public:
 
     constexpr u8 operator [] (u32 index) const {
         return index & 1
-            ? u4::array::operator[](index >> 1) & 0xF
-            : u4::array::operator[](index >> 1) >> 4;
+            ? u4Array::array::operator[](index >> 1) & 0xF
+            : u4Array::array::operator[](index >> 1) >> 4;
     }
 
     const u8* ptr() const {
-        return u4::array::data();
+        return u4Array::array::data();
     }
 
     void set(u32 index, u32 value) {
-        u32 old = u4::array::operator[](index >> 1);
+        u32 old = u4Array::array::operator[](index >> 1);
         if (index & 1) {
             old &= 0x0F;
             value <<= 4;
         } else {
             old &= 0xF0;
         }
-        u4::array::operator[](index >> 1) = old | value;
+        u4Array::array::operator[](index >> 1) = old | value;
     }
 };
 
 template <typename ... Arg>
-inline constexpr u4<sizeof...(Arg)/2> U4(Arg ... arg) {
+inline constexpr u4Array<sizeof...(Arg)/2> toU4(Arg ... arg) {
     std::array<int, sizeof...(Arg)> in = {static_cast<int>(arg)...};
     std::array<u8, sizeof...(Arg)/2> out = {};
     u32 i = 0;
@@ -78,7 +171,7 @@ inline constexpr u4<sizeof...(Arg)/2> U4(Arg ... arg) {
 }
 
 template <typename ... Arg>
-inline constexpr std::array<u8, sizeof...(Arg)> U8(Arg ... arg) {
+inline constexpr std::array<u8, sizeof...(Arg)> toU8(Arg ... arg) {
     return std::array<u8, sizeof...(Arg)>{ static_cast<u8>(arg)... };
 };
 
@@ -109,7 +202,7 @@ inline constexpr f32 toRadians(f32 deg){
 #include <FixedPoints/FixedPoints.h>
 using f32 = FixedPoints::SFixed<23, 8>;
 
-inline constexpr f32 PI = f32::Pi;
+inline constexpr f32 PI = FixedPoints::Pi<f32>;
 
 inline constexpr s32 f32ToS24q8(f32 f){
     return f.getInternal();
@@ -120,12 +213,12 @@ inline constexpr f32 s24q8ToF32(s32 s){
 }
 
 inline constexpr f32 sin(f32 rad) {
-    using trig = Trig<(f32::Pi/2).getInternal(), 255>;
+    using trig = Trig<(PI/2).getInternal(), 255>;
     return f32::fromInternal(trig::sin(rad.getInternal()));
 }
 
 inline constexpr f32 cos(f32 rad) {
-    using trig = Trig<(f32::Pi/2).getInternal(), 255>;
+    using trig = Trig<(PI/2).getInternal(), 255>;
     return f32::fromInternal(trig::cos(rad.getInternal()));
 }
 
@@ -138,8 +231,8 @@ inline constexpr s32 round(f32 v){
     return (v.getInternal() + (1 << 7)) >> 8;
 }
 
-inline constexpr s32 floor(f32 v){
-    return static_cast<s32>(v.getInternal()) >> 8;
+inline constexpr f32 floor(f32 v){
+    return f32::fromInternal(static_cast<s32>(v.getInternal()) >> 8 << 8);
 }
 
 inline constexpr s32 ceil(f32 v){

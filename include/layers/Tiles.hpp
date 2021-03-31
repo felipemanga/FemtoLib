@@ -2,34 +2,9 @@
 #include "../Femto"
 
 namespace Graphics {
-
-    namespace layer {
-        template <u32 _tileWidth, u32 _tileHeight, bool _isTransparent = true>
-        class Tiles;
-    }
-
-    struct TileSource {
-        using Callback = const u8 * (*)(u32 x, u32 y, void *data);
-        Callback callback;
-        void* data;
-
-        TileSource() = default;
-        TileSource(const TileSource& other) = default;
-
-        TileSource(Callback cb, void *data = nullptr) : callback(cb), data(data) {}
-
-        template<typename Clazz>
-        TileSource(Clazz &provider){
-            data = &provider;
-            callback = [](u32 x, u32 y, void *data) -> const u8* {
-                return reinterpret_cast<Clazz*>(data)->get(x, y);
-            };
-        }
-    };
-
     namespace layer {
 
-        template <u32 _tileWidth, u32 _tileHeight, bool _isTransparent>
+        template <u32 _tileWidth, u32 _tileHeight, bool _isTransparent, typename TileSource>
         class Tiles {
         public:
             constexpr static bool isTransparent = _isTransparent;
@@ -37,15 +12,19 @@ namespace Graphics {
             constexpr static u32 tileHeight = _tileHeight;
             constexpr static u32 rowWidth = screenWidth / _tileWidth + 2;
 
-            const u8 *row[rowWidth];
             TileSource source;
-            s32 counter = screenHeight;
-            s32 rowNum = 0;
-            u32 dx;
 
-            Tiles(const TileSource& source) : source(source) {
-                bind();
-            }
+            template<typename Other>
+            constexpr Tiles(const Other& other) : source(other.source), row{} {}
+
+            template<typename Other>
+            constexpr Tiles(Other&& other) : source(std::move(other.source)), row{} {}
+
+            constexpr Tiles(const TileSource& source) :
+                source(source), row{} {}
+
+            constexpr Tiles(TileSource&& source) :
+                source(std::move(source)), row{} {}
 
             void update(u16 *line, s32 y) {
                 counter++;
@@ -60,9 +39,9 @@ namespace Graphics {
                     }
                     s32 cx = round(camera.x);
                     s32 gx = cx / tileWidth;
-                    dx = cx - gx * tileWidth;
+                    dx = cx - gx * s32(tileWidth);
                     for(u32 x = 0; x < rowWidth; ++x){
-                        row[x] = source.callback(gx++, rowNum, source.data);
+                        row[x] = source.get(gx++, rowNum);
                     }
                 }
 
@@ -95,10 +74,27 @@ namespace Graphics {
 
             }
 
-            void bind(){
-                // instance = this;
-                // _tileMap = +[](){};
-            }
+        private:
+            const u8 *row[rowWidth];
+            s32 counter = screenHeight;
+            s32 rowNum = 0;
+            u32 dx = 0;
         };
+
+        template<
+            u32 tileWidth, u32 tileHeight,
+            typename IndexType, typename BitmapType
+            >
+        constexpr auto makeSimpleTilemap(IndexType&& mt, BitmapType&& tt, u32 mapWidth, u32 mapHeight) {
+            Data2D map = {
+                PageLUT{
+                    std::forward<IndexType>(mt),
+                    std::forward<BitmapType>(tt),
+                    tileWidth*tileHeight
+                },
+                mapWidth, mapHeight
+            };
+            return Graphics::layer::Tiles<tileWidth, tileHeight, true, decltype(map)>(std::move(map));
+        }
     }
 }

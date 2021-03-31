@@ -27,15 +27,21 @@ namespace Graphics {
             u32 alpha;
 
             RotoZoom() {
+                update = &RotoZoom::nullUpdate;
                 bind();
             }
 
             void (RotoZoom::*update)(u16 *, s32 y);
+            void nullUpdate(u16*, s32) {}
 
             void rotozoom(const u8 *data, s32 x, s32 y, u8 alpha, f32 rotate, f32 scale, f32 anchorX, f32 anchorY){
                 if (scale == 0) data = nullptr;
                 bitmap = data;
-                if (!bitmap) return;
+                if (!bitmap){
+                    update = &RotoZoom::nullUpdate;
+                    return;
+                }
+
                 this->alpha = (u32(alpha) + 4) >> 3;
 
                 update = (alpha < ((0xFF + 4) >> 3))
@@ -111,12 +117,15 @@ namespace Graphics {
                 if (maxX > s32(screenWidth)) {
                     maxX = screenWidth;
                 }
+                if (maxY <= 0 || minY >= s32(screenHeight)) {
+                    update = &RotoZoom::nullUpdate;
+                }
             }
 
             template<bool hasAlpha>
             void updateFunc(u16 *line, s32 y){
-                if (!bitmap || y >= maxY) return;
                 if (y < minY) return;
+                if (y + 1 >= maxY) update = &RotoZoom::nullUpdate;
 
                 f32 px = ax, py = ay;
                 ax += lx; ay += ly;
@@ -126,12 +135,12 @@ namespace Graphics {
                 u32 size = width * height;
 
                 for (auto x = minX; x < maxX; ++x, px += cx, py += cy){
-                    u32 tx = floor(px);
+                    u32 tx = s32(floor(px));
 
                     if (tx >= width)
                         continue;
 
-                    u32 index = tx + floor(py) * width;
+                    u32 index = tx + s32(floor(py)) * width;
                     if (index < size){
                         if (u32 color = bitmap[2 + index]){
                             color = palette[color];
@@ -159,8 +168,16 @@ namespace Graphics {
     inline void draw(const u8 *data, s32 x, s32 y, f32 alpha, f32 rotate, f32 scale = f32(1), f32 anchorX = f32(0.5), f32 anchorY = f32(0.5)){
         u8 a = std::clamp<s32>(f32ToS24q8(alpha), 0, 255);
         if constexpr (bits == 8) {
-            instance->palette = palette;
-            instance->rotozoom(data, x, y, a, rotate, scale, anchorX, anchorY);
+#ifdef DEBUG
+            if (instance) {
+#endif
+                instance->palette = palette;
+                instance->rotozoom(data, x, y, a, rotate, scale, anchorX, anchorY);
+#ifdef DEBUG
+            } else {
+                LOG1("Error: Missing RotoZoom layer\n");
+            }
+#endif
         }
     }
 

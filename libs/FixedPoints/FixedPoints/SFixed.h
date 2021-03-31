@@ -40,7 +40,7 @@ public:
 	constexpr const static unsigned IntegerSize = Integer + 1;
 	constexpr const static unsigned FractionSize = Fraction;
 	constexpr const static unsigned LogicalSize = IntegerSize + FractionSize;
-	constexpr const static unsigned InternalSize = FIXED_POINTS_DETAILS::BitSize<InternalType>::Value;	
+	constexpr const static unsigned InternalSize = FIXED_POINTS_DETAILS::BitSize<InternalType>::Value;
 	
 	constexpr const static unsigned long long Scale = 1ULL << FractionSize;
 	
@@ -71,7 +71,7 @@ public:
 	constexpr IntegerType getInteger(void) const;	
 	constexpr FractionType getFraction(void) const;
 
-	constexpr explicit operator IntegerType(void) const;
+        constexpr operator IntegerType(void) const; // Edited by FManga
 	constexpr explicit operator float(void) const;
 	constexpr explicit operator double(void) const;
 
@@ -87,35 +87,24 @@ public:
 	SFixed & operator -=(const SFixed & other);
 	SFixed & operator *=(const SFixed & other);
 	SFixed & operator /=(const SFixed & other);
-	
-public:
-    const static SFixed Epsilon;
-    const static SFixed MinValue;
-    const static SFixed MaxValue;
-	
-	// 40 digits is probably enough for these
-    const static SFixed Pi;
-    const static SFixed E;
-    const static SFixed Phi;
-    const static SFixed Tau;
 };
 
-template< unsigned Integer, unsigned Fraction >
-constexpr SFixed<Integer, Fraction> SFixed<Integer, Fraction>::Epsilon = SFixed<Integer, Fraction>::fromInternal(1);
-template< unsigned Integer, unsigned Fraction >
-constexpr SFixed<Integer, Fraction> SFixed<Integer, Fraction>::MinValue = SFixed<Integer, Fraction>::fromInternal(FIXED_POINTS_DETAILS::MsbMask<InternalSize>::Value);
-template< unsigned Integer, unsigned Fraction >
-constexpr SFixed<Integer, Fraction> SFixed<Integer, Fraction>::MaxValue = SFixed<Integer, Fraction>::fromInternal(~FIXED_POINTS_DETAILS::MsbMask<InternalSize>::Value);
+template<typename Fixed>
+inline constexpr Fixed Epsilon = Fixed::fromInternal(1);
+template<typename Fixed>
+inline constexpr Fixed MinValue = Fixed::fromInternal(FIXED_POINTS_DETAILS::MsbMask<Fixed::InternalSize>::Value);
+template<typename Fixed>
+inline constexpr Fixed MaxValue = Fixed::fromInternal(~FIXED_POINTS_DETAILS::MsbMask<Fixed::InternalSize>::Value);
 
 // 40 digits is probably enough for these
-template< unsigned Integer, unsigned Fraction >
-constexpr SFixed<Integer, Fraction> SFixed<Integer, Fraction>::Pi = 3.1415926535897932384626433832795028841971;
-template< unsigned Integer, unsigned Fraction >
-constexpr SFixed<Integer, Fraction> SFixed<Integer, Fraction>::E = 2.718281828459045235360287471352662497757;
-template< unsigned Integer, unsigned Fraction >
-constexpr SFixed<Integer, Fraction> SFixed<Integer, Fraction>::Phi = 1.6180339887498948482045868343656381177203;
-template< unsigned Integer, unsigned Fraction >
-constexpr SFixed<Integer, Fraction> SFixed<Integer, Fraction>::Tau = 6.2831853071795864769252867665590057683943;
+template<typename Fixed>
+inline constexpr Fixed Pi = 3.1415926535897932384626433832795028841971;
+template<typename Fixed>
+inline constexpr Fixed E = 2.718281828459045235360287471352662497757;
+template<typename Fixed>
+inline constexpr Fixed Phi = 1.6180339887498948482045868343656381177203;
+template<typename Fixed>
+inline constexpr Fixed Tau = 6.2831853071795864769252867665590057683943;
 
 
 //

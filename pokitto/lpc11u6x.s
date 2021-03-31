@@ -912,4 +912,7 @@ PV_INIT_GPIO:
         // Set Reset button to GPIO
         // SET 0x40044000,0x89
 
+//        System.memory.STR( LPC11U68.PIO0_0, 0x81 );
+//        SET 0x40044000,0x81
+
 	END

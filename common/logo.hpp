@@ -61,11 +61,7 @@ WEAK void showLogo(){
     constexpr u32 frameSize = screenWidth * screenHeight * 2;
     u32 frameCount = size / frameSize;
     logo.seek(random(0, frameCount) * frameSize);
-    u16 line[screenWidth];
-    for (u32 y=0; y<screenHeight && logo.read(line); ++y) {
-        flushLine16(line);
-    }
-
+    streamI16(logo, 220, 176, 0xFFFF);
     static f32 startTime = getTime();
     static Audio::RAWFileSource *src = nullptr;
     static bool startSound = false;
