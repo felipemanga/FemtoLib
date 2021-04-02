@@ -1,3 +1,4 @@
+#pragma once
 
 // This font contains a special UI graphics in lower case letters. It is meant to be used with Pokitto UI Widgets.
 

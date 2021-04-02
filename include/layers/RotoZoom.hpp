@@ -31,6 +31,10 @@ namespace Graphics {
                 bind();
             }
 
+            void operator () (u16 *line, s32 y) {
+                (this->*update)(line, y);
+            }
+
             void (RotoZoom::*update)(u16 *, s32 y);
             void nullUpdate(u16*, s32) {}
 

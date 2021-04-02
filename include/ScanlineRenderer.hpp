@@ -1,75 +1,87 @@
 #pragma once
 #include "Femto"
+#include "types.hpp"
+#include <tuple>
 
 extern "C" void flushLine16(u16 *line);
 extern void (*updateDisplay)();
 
 namespace Graphics {
 
-struct LineFiller {
-    using Update = void (*)(u16 *line, u32 y, uptr data);
-    uptr data;
-    Update update;
+    using LineFiller = Function<void(u16*, u32)>;
 
-    LineFiller() = default;
-
-    constexpr LineFiller(LineFiller* other) :
-        data(other->data),
-        update(other->update) {}
-
-    constexpr LineFiller(uptr data, Update update) : data(data), update(update) {}
-
-    template <typename Class>
-    constexpr LineFiller(Class* obj) :
-        data(reinterpret_cast<uptr>(obj)),
-        update(+[](u16 *line, u32 y, uptr data){
-            auto obj = reinterpret_cast<Class*>(data);
-            if constexpr (std::is_member_function_pointer<decltype(&Class::update)>::value) {
-                reinterpret_cast<Class*>(data)->update(line, y);
-            } else {
-                auto update = obj->update;
-                (obj->*update)(line, y);
+    namespace _graphicsInternal {
+        inline void update(LineFiller* fillers, u32 count) {
+            u16 line[screenWidth + 16];
+            for(u32 y=0; y<screenHeight; ++y){
+                for( u32 i=0; i<count; ++i){
+                    fillers[i](line + 8, y);
+                }
+                flushLine16(line + 8);
             }
-        }) {}
-
-    template <typename Class>
-    constexpr LineFiller(Class& obj) : LineFiller(&obj) {}
-};
-
-namespace _graphicsInternal {
-    inline void update(LineFiller* fillers, u32 count) {
-        u16 line[screenWidth + 16];
-        for(u32 y=0; y<screenHeight; ++y){
-            for( u32 i=0; i<count; ++i){
-                auto& filler = fillers[i];
-                filler.update(line + 8, y, filler.data);
-            }
-            flushLine16(line + 8);
         }
+
+        inline void *instance;
     }
 
-    inline void *instance;
-}
+    class DynamicRenderer {
+    public:
+        LineFiller *fillers;
+        const u32 fillerCount;
 
-template<typename ... Type>
-class ScanlineRenderer {
-public:
-    LineFiller fillers[sizeof...(Type)];
+        template<u32 count>
+        DynamicRenderer(std::array<LineFiller, count> &fillers) : fillers{fillers.data()}, fillerCount(count) { bind(); }
 
-    ScanlineRenderer(const Type& ... fillers) : fillers{const_cast<Type*>(&fillers)...} {
-        bind();
-    }
+        template<u32 count>
+        DynamicRenderer(LineFiller (&fillers)[count]) : fillers{fillers}, fillerCount(count) { bind(); }
 
-    void bind() {
-        auto update = +[](){
-            auto &instance = *reinterpret_cast<ScanlineRenderer*>(_graphicsInternal::instance);
-            _graphicsInternal::update(instance.fillers, sizeof...(Type));
+        DynamicRenderer(LineFiller *fillers, u32 count) : fillers{fillers}, fillerCount(count) { bind(); }
+
+        ~DynamicRenderer(){
+            if (_graphicsInternal::instance == this) {
+                _graphicsInternal::instance = nullptr;
+                if (updateDisplay == update) {
+                    updateDisplay = +[](){};
+                }
+            }
+        }
+
+        static void update(){
+            auto &instance = *reinterpret_cast<DynamicRenderer*>(_graphicsInternal::instance);
+            _graphicsInternal::update(instance.fillers, instance.fillerCount);
         };
 
-        _graphicsInternal::instance = this;
-        updateDisplay = update;
-    }
-};
+        void bind() {
+            _graphicsInternal::instance = this;
+            updateDisplay = update;
+        }
+    };
+
+    template <typename ... Args>
+    class Renderer : DynamicRenderer {
+        std::tuple<Args...> args;
+        LineFiller fillers[sizeof...(Args)];
+
+    public:
+        Renderer() :
+            DynamicRenderer(fillers),
+            fillers{std::get<Args>(args)...} {}
+
+        template <u32 num>
+        auto get(){
+            return std::get<num>(args);
+        }
+
+        template <typename Type>
+        void bind() {
+            std::get<Type>(args).bind();
+        }
+
+        template <u32 num>
+        void bind() {
+            std::get<num>(args).bind();
+        }
+    };
 
 }
 
@@ -81,12 +93,13 @@ public:
 #include "fonts/tiny5x7.hpp"
 
 namespace Graphics {
-    inline void init(u32 bgColor = 0){
+    template<u32 bgColor = colorFromRGB(0x1155AA), u32 spriteCount = 100, const u8* font = fontTiny>
+    inline void init(){
         Graphics::palette = Graphics::generalPalette;
-        static Graphics::layer::DrawList<200> drawList(fontTiny);
-        static Graphics::ScanlineRenderer defaultGfx = {
-            Graphics::layer::solidColor(bgColor),
-            drawList
-        };
+        static Graphics::Renderer<
+            Graphics::layer::SolidColor<bgColor>,
+            Graphics::layer::RotoZoom,
+            Graphics::layer::DrawList<spriteCount, font>
+            > defaultGfx;
     }
 }

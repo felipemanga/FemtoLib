@@ -18,8 +18,6 @@ namespace Graphics {
 
 #ifdef USE_SCANLINE_RENDERER
 #include "ScanlineRenderer.hpp"
-#endif
-
-#ifdef USE_SDL_RENDERER
+#elif USE_SDL_RENDERER
 #include "SDLRenderer.hpp"
 #endif

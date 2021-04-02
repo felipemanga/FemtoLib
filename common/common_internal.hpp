@@ -2,8 +2,6 @@
 
 #include "../include/Femto"
 
-#define WEAK          __attribute__ ((weak))
-
 extern "C" void SystemInit();
 
 static u8 volume = 1;
@@ -56,7 +54,7 @@ WEAK void pixelCopy8BPPAS(u16* dest, const u8* src, u32 count, const u16* palett
 }
 
 WEAK void init() {
-    Graphics::init(colorFromRGB(0x1155AA));
+    Graphics::init();
     Audio::init();
     setMaxFPS(0);
 }

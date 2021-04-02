@@ -1,3 +1,5 @@
+#pragma once
+
 //WARNING: This Font Require X-GLCD Lib.
 //         You can not use it with MikroE GLCD Lib.
 

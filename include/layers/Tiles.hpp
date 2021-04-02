@@ -4,10 +4,12 @@
 namespace Graphics {
     namespace layer {
 
-        template <u32 _tileWidth, u32 _tileHeight, bool _isTransparent, typename TileSource>
+        using TileCopy = Function<void(u16*, u32 x, u32 y, u32 width)>;
+        using TileSource = Function<TileCopy(u32, u32)>;
+
+        template <u32 _tileWidth, u32 _tileHeight>
         class Tiles {
         public:
-            constexpr static bool isTransparent = _isTransparent;
             constexpr static u32 tileWidth = _tileWidth;
             constexpr static u32 tileHeight = _tileHeight;
             constexpr static u32 rowWidth = screenWidth / _tileWidth + 2;
@@ -24,9 +26,9 @@ namespace Graphics {
                 source(source), row{} {}
 
             constexpr Tiles(TileSource&& source) :
-                source(std::move(source)), row{} {}
+                source(source), row{} {}
 
-            void update(u16 *line, s32 y) {
+            void operator () (u16 *line, s32 y) {
                 counter++;
                 if (!y || counter >= s32(tileHeight)) {
                     if (!y) {
@@ -41,60 +43,99 @@ namespace Graphics {
                     s32 gx = cx / tileWidth;
                     dx = cx - gx * s32(tileWidth);
                     for(u32 x = 0; x < rowWidth; ++x){
-                        row[x] = source.get(gx++, rowNum);
+                        row[x] = source(gx++, rowNum);
                     }
                 }
 
                 u32 dx = this->dx;
                 auto end = line + screenWidth;
                 for (u32 column = 0; column < rowWidth - 2; ++column){
-                    if (isTransparent && !row[column]) continue;
-                    auto tile = row[column] + counter * tileWidth + dx;
-                    for (u32 x = dx; x < tileWidth; ++x, ++line) {
-                        u32 color = *tile++;
-                        if (!isTransparent || color) {
-                            color = palette[color];
-                            *line = color;
-                        }
+                    if (row[column]) {
+                        row[column](line, dx, counter, tileWidth);
                     }
+                    line += tileWidth - dx;
                     dx = 0;
                 }
 
-                for (u32 column = rowWidth - 2; column < rowWidth; ++column){
-                    if (isTransparent && !row[column]) continue;
-                    auto tile = row[column] + counter * tileWidth;
-                    for (u32 x = 0; x < tileWidth && line != end; ++x, ++line) {
-                        u32 color = *tile++;
-                        if (!isTransparent || color) {
-                            color = palette[color];
-                            *line = color;
-                        }
+                for (u32 column = rowWidth - 2; column < rowWidth && line < end; ++column){
+                    if (row[column]) {
+                        u16 tmp[tileWidth];
+                        for(u32 x = 0; x < tileWidth; ++x)
+                            tmp[x] = line[x];
+                        row[column](tmp, 0, counter, tileWidth);
+                        auto m = std::min<u32>(end - line, tileWidth);
+                        for(u32 x = 0; x < m; ++x)
+                            line[x] = tmp[x];
                     }
+                    line += tileWidth;
                 }
-
             }
 
         private:
-            const u8 *row[rowWidth];
+            TileCopy row[rowWidth];
             s32 counter = screenHeight;
             s32 rowNum = 0;
             u32 dx = 0;
         };
 
-        template<
-            u32 tileWidth, u32 tileHeight,
-            typename IndexType, typename BitmapType
-            >
-        constexpr auto makeSimpleTilemap(IndexType&& mt, BitmapType&& tt, u32 mapWidth, u32 mapHeight) {
-            Data2D map = {
-                PageLUT{
-                    std::forward<IndexType>(mt),
-                    std::forward<BitmapType>(tt),
-                    tileWidth*tileHeight
-                },
-                mapWidth, mapHeight
-            };
-            return Graphics::layer::Tiles<tileWidth, tileHeight, true, decltype(map)>(std::move(map));
+        namespace _internal {
+            Function<u32(u32, u32)> *getTile;
+            Function<TileCopy(u32)> *getBitmap;
         }
+
+        template<
+            u32 tileWidth,
+            u32 tileHeight
+            >
+        class Tilemap : public Graphics::layer::Tiles<tileWidth, tileHeight> {
+
+            static constexpr u32 tileSize = tileWidth * tileHeight;
+
+            Function<u32(u32, u32)> getTile;
+            Function<TileCopy(u32)> getBitmap;
+
+        public:
+            Tilemap() :
+                Graphics::layer::Tiles<tileWidth, tileHeight>(TileSource{this})
+                { bind(); }
+
+            using Tiles<tileWidth, tileHeight>::operator();
+
+            TileCopy operator () (u32 x, u32 y){
+                if (!getBitmap || !getTile)
+                    return {};
+                return getBitmap(getTile(x, y));
+            }
+
+            void bind(){
+                _internal::getTile = &getTile;
+                _internal::getBitmap = &getBitmap;
+            }
+        };
+    }
+
+    template<typename Map>
+    void setTilemap(Map &map){
+        *Graphics::layer::_internal::getTile = map;
+    }
+
+    void setTileset(const u8 *ts) {
+        *Graphics::layer::_internal::getBitmap = {
+            reinterpret_cast<uptr>(ts),
+            [](uptr uts, u32 tileId) -> layer::TileCopy {
+                auto ts = reinterpret_cast<const u8*>(uts);
+                auto bmp = ts + tileId * (ts[0] * ts[0]);
+                return {
+                    reinterpret_cast<uptr>(bmp),
+                    [](uptr ubmp, u16 *line, u32 x, u32 y, u32 width){
+                        auto bmp = reinterpret_cast<const u8*>(ubmp);
+                        bmp += y * width + x;
+                        for( s32 i = width - x; i >= 0; --i ){
+                            *line++ = palette[*bmp++];
+                        }
+                    }
+                };
+            }
+        };
     }
 }

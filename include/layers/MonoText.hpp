@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Femto"
+#include "fonts/tiny5x7.hpp"
 
 namespace Graphics {
 namespace layer {
@@ -10,7 +11,7 @@ inline void* instance;
 inline void (*_clear)() = +[](){};
 }
 
-template<const u8* font>
+template<const u8* font = fontTiny>
 class MonoText {
     static constexpr u32 fontHeight = font[1];
     static constexpr u32 fontWidth = font[0];
@@ -101,7 +102,7 @@ public:
         MemOps::set(buffer + (rows - 1) * columns, 0, columns);
     }
 
-    void update(u16 *line, u32 y){
+    void operator () (u16 *line, u32 y){
         u32 row = (y * invFontHeight + (1 << 20)) >> 24;
         u32 shift = y - row * fontHeight;
         if(row >= rows) return;

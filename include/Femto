@@ -4,6 +4,8 @@
 #define PROJ_YAPFS_STREAMING
 #endif
 
+#define WEAK          __attribute__ ((weak))
+
 #include "../libs/File/File"
 #include "../libs/LibAudio/LibAudio"
 #include "../libs/LibSchedule/LibSchedule"

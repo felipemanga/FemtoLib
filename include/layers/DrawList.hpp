@@ -416,7 +416,7 @@ namespace Graphics {
 
     namespace layer {
 
-        template <u32 _capacity>
+        template <u32 _capacity = 100, const u8* _font = nullptr>
         class DrawList {
             using Cmd = _drawListInternal::Cmd;
             u32 _size = 0;
@@ -456,13 +456,11 @@ namespace Graphics {
 
         public:
 
-            DrawList(const u8 *font){
-                bind();
-                bindText(font);
-            }
-
             DrawList(){
                 bind();
+                if (_font) {
+                    bindText();
+                }
             }
 
             void bind() {
@@ -479,14 +477,16 @@ namespace Graphics {
                      };
             }
 
-            void bindText(const u8 *font = _drawListInternal::font) {
-                _drawListInternal::font = font;
-                _graphicsInternal::_textXScale = 1;
-                _graphicsInternal::_textYScale = 1;
-                _graphicsInternal::_print = _drawListInternal::_print;
+            void bindText(const u8 *font = _font) {
+                if (font) {
+                    _drawListInternal::font = font;
+                    _graphicsInternal::_textXScale = 1;
+                    _graphicsInternal::_textYScale = 1;
+                    _graphicsInternal::_print = _drawListInternal::_print;
+                }
             }
 
-            void update(u16 *line, u32 y){
+            void operator() (u16 *line, u32 y){
                 if(y == 0){
                     for(u32 i=0; i<screenHeight; ++i)
                         cmdsPerLine[i] = 0;

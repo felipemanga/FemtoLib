@@ -28,132 +28,214 @@ using umin = typename _umin<(maxVal >> 32) ? 8 :
 
 #define decl_cast(type, value) static_cast<decltype(type)>(value)
 
-template <typename Type>
-using DataReferenceType = typename std::conditional<
-    std::is_pointer_v<Type>,
-    Type,
-    typename std::conditional<
-        std::is_array_v<Type>,
-        std::remove_all_extents_t<Type>*,
-        Type&
-        >::type
-    >::type;
+template<typename Func_t>
+class Function {
 
-template <typename DataType, typename LUTType>
-class LUT {
+    template<typename Type> struct helper;
+
+    template<typename Ret, typename ... Args>
+    struct helper<Ret(Args...)> {
+        using ptr = Ret (*) (uptr, Args...);
+    };
+
+    using Func = typename helper<Func_t>::ptr;
+
+    uptr data = 0;
+    Func func = nullptr;
+
 public:
-    DataType data;
-    LUTType lut;
+    constexpr Function() = default;
 
-    template <typename _DataType, typename _LUTType>
-    constexpr LUT(const _DataType &data, const _LUTType &lut) :
-        data(data),
-        lut(lut) {}
+    constexpr Function(Function&& other) :
+        data(other.data),
+        func(other.func) {}
 
-    template <typename _DataType, typename _LUTType>
-    constexpr LUT(_DataType &&data, _LUTType &&lut) :
-        data(std::move(data)),
-        lut(std::move(lut)) {}
+    constexpr Function(const Function &other) :
+        data(other.data),
+        func(other.func) {}
 
-    constexpr auto operator [] (u32 index) const {
-        return lut[data[index]];
+    constexpr Function(Function* other) :
+        data(other->data),
+        func(other->func) {}
+
+    constexpr Function(uptr data, Func func) :
+        data{data},
+        func{func} {}
+
+    constexpr Function(Func_t* unwrapped) :
+        data{reinterpret_cast<uptr>(unwrapped)},
+        func{[](uptr data, auto ... args){
+            return reinterpret_cast<Func_t*>(data)(std::forward<decltype(args)>(args)...);
+        }} {}
+
+    constexpr Function& operator = (Function&& other) {
+        data = other.data;
+        func = other.func;
+        return *this;
+    }
+
+    constexpr Function& operator = (const Function& other) {
+        data = other.data;
+        func = other.func;
+        return *this;
+    }
+
+    template <typename Class>
+    constexpr Function(const Class* obj) :
+        data{reinterpret_cast<uptr>(obj)},
+        func{[](uptr data, auto ... args){
+            return (*reinterpret_cast<Class*>(data))(std::forward<decltype(args)>(args)...);
+        }} {}
+
+    template <typename Class, std::enable_if_t<!std::is_pointer<Class>::value, int> = 0>
+    constexpr Function(const Class& obj) : Function(&obj) {}
+
+    template <typename ... Args>
+    auto operator () (Args&& ... args)  const {
+        return func(data, std::forward<Args>(args)...);
+    }
+
+    operator bool () const {
+        return func != nullptr;
     }
 };
 
-template <typename DataType, typename LUTType>
-LUT(const DataType&, const LUTType&) -> LUT<
-    DataReferenceType<const DataType>,
-    DataReferenceType<const LUTType>
-    >;
+// template <typename Type>
+// using DataReferenceType = typename std::conditional<
+//     std::is_pointer_v<Type>,
+//     Type,
+//     typename std::conditional<
+//         std::is_array_v<Type>,
+//         std::remove_all_extents_t<Type>*,
+//         Type&
+//         >::type
+//     >::type;
 
-template <typename DataType, typename LUTType>
-class PageLUT {
-public:
-    DataType data;
-    LUTType lut;
-    u32 pageSize;
+// template <typename DataType, typename LUTType>
+// class LUT {
+// public:
+//     DataType data;
+//     LUTType lut;
 
-    template <typename _DataType, typename _LUTType>
-    constexpr PageLUT(const _DataType &data, const _LUTType &lut, u32 pageSize) :
-        data(data),
-        lut(lut),
-        pageSize(pageSize) {}
+//     template <typename _DataType, typename _LUTType>
+//     constexpr LUT(const _DataType &data, const _LUTType &lut) :
+//         data(data),
+//         lut(lut) {}
 
-    template <typename _DataType, typename _LUTType>
-    constexpr PageLUT(_DataType &&data, _LUTType &&lut, u32 pageSize) :
-        data(std::move(data)),
-        lut(std::move(lut)),
-        pageSize(pageSize) {}
+//     template <typename _DataType, typename _LUTType>
+//     constexpr LUT(_DataType &&data, _LUTType &&lut) :
+//         data(std::move(data)),
+//         lut(std::move(lut)) {}
 
-    constexpr auto operator [] (u32 index) const {
-        return lut + data[index] * pageSize;
-    }
-};
+//     constexpr auto operator [] (u32 index) const {
+//         return lut[data[index]];
+//     }
+// };
 
-template <typename DataType, typename LUTType>
-PageLUT(const DataType&, const LUTType&, u32) -> PageLUT<
-    DataReferenceType<const DataType>,
-    DataReferenceType<const LUTType>
-    >;
+// template <typename DataType, typename LUTType>
+// LUT(const DataType&, const LUTType&) -> LUT<
+//     DataReferenceType<const DataType>,
+//     DataReferenceType<const LUTType>
+//     >;
 
-template <typename Type>
-class Data2D {
-public:
-    Type data;
-    u32 width;
-    u32 height;
+// template <typename DataType, typename LUTType>
+// class PageLUT {
+// public:
+//     DataType data;
+//     LUTType lut;
+//     u32 pageSize;
 
-    auto operator [] (u32 index) const {
-        return data[index];
-    }
+//     template <typename _DataType, typename _LUTType>
+//     constexpr PageLUT(const _DataType &data, const _LUTType &lut, u32 pageSize) :
+//         data(data),
+//         lut(lut),
+//         pageSize(pageSize) {}
 
-    auto get(u32 x, u32 y) const {
-        x %= width; y %= height;
-        return data[y * width + x];
-    }
-};
+//     template <typename _DataType, typename _LUTType>
+//     constexpr PageLUT(_DataType &&data, _LUTType &&lut, u32 pageSize) :
+//         data(std::move(data)),
+//         lut(std::move(lut)),
+//         pageSize(pageSize) {}
 
-template <typename Type>
-Data2D(const Type& data, u32, u32) -> Data2D<
-    DataReferenceType<const Type>
-    >;
+//     constexpr auto operator [] (u32 index) const {
+//         return lut + data[index] * pageSize;
+//     }
+// };
 
-template <typename Type>
-Data2D(Type&& data, u32, u32) -> Data2D<Type>;
+// template <typename DataType, typename LUTType>
+// PageLUT(const DataType&, const LUTType&, u32) -> PageLUT<
+//     DataReferenceType<const DataType>,
+//     DataReferenceType<const LUTType>
+//     >;
+
+// template <typename Type>
+// class Data2D {
+// public:
+//     Type data;
+//     u32 width;
+//     u32 height;
+
+//     auto operator [] (u32 index) const {
+//         return data[index];
+//     }
+
+//     auto get(u32 x, u32 y) const {
+//         x %= width; y %= height;
+//         return data[y * width + x];
+//     }
+// };
+
+// template <typename Type>
+// Data2D(const Type& data, u32, u32) -> Data2D<
+//     DataReferenceType<const Type>
+//     >;
+
+// template <typename Type>
+// Data2D(Type&& data, u32, u32) -> Data2D<Type>;
 
 template<std::size_t count>
-class u4Array : public std::array<u8, count> {
+class Bitmap4BPP : public std::array<u8, count> {
 public:
-    constexpr u4Array(const std::array<u8, count>& in) : u4Array::array(in) {}
+    constexpr Bitmap4BPP(const std::array<u8, count>& in) : Bitmap4BPP::array(in) {}
 
     constexpr operator const u8* () const {
         return ptr();
     }
 
-    constexpr u8 operator [] (u32 index) const {
+    constexpr operator Function<u32(u32 x, u32 y)> () const {
+        return this;
+    }
+
+    const u32 operator () (u32 x, u32 y) {
+        return (*this)[2 + x + y * ptr()[0]];
+    }
+
+    constexpr u32 operator [] (u32 index) const {
+        if (index < 2)
+            return Bitmap4BPP::array::operator[](index);
         return index & 1
-            ? u4Array::array::operator[](index >> 1) & 0xF
-            : u4Array::array::operator[](index >> 1) >> 4;
+            ? Bitmap4BPP::array::operator[](index >> 1) & 0xF
+            : Bitmap4BPP::array::operator[](index >> 1) >> 4;
     }
 
     const u8* ptr() const {
-        return u4Array::array::data();
+        return Bitmap4BPP::array::data();
     }
 
     void set(u32 index, u32 value) {
-        u32 old = u4Array::array::operator[](index >> 1);
+        u32 old = Bitmap4BPP::array::operator[](index >> 1);
         if (index & 1) {
             old &= 0x0F;
             value <<= 4;
         } else {
             old &= 0xF0;
         }
-        u4Array::array::operator[](index >> 1) = old | value;
+        Bitmap4BPP::array::operator[](index >> 1) = old | value;
     }
 };
 
 template <typename ... Arg>
-inline constexpr u4Array<sizeof...(Arg)/2> toU4(Arg ... arg) {
+inline constexpr Bitmap4BPP<sizeof...(Arg)/2> toU4(Arg ... arg) {
     std::array<int, sizeof...(Arg)> in = {static_cast<int>(arg)...};
     std::array<u8, sizeof...(Arg)/2> out = {};
     u32 i = 0;
