@@ -15,6 +15,7 @@ namespace Graphics {
     }
 
     inline void setCursor(Point2D point){
+        point -= camera;
         setCursor(point.x, point.y);
     }
 

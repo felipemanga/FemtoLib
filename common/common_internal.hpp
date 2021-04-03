@@ -10,7 +10,34 @@ static u32 frameRate = 0;
 static u32 allocatedSize = 0;
 
 namespace Graphics::_drawListInternal {
-WEAK void pixelCopy8BPP(u16* dest, const u8* src, u32 count, const u16* palette) {
+template <u32 bits, bool blend, bool solid>
+void pixelCopy(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha) {
+    constexpr auto inv = 8 / bits;
+    constexpr auto mask = (bits << 1) - 1;
+    while (s32(count-=inv) >= 0) {
+        u32 c = *src++;
+        for_constexpr<0, inv, 1>([&](u32 i){
+     // for (u32 i = 0; i < inv; ++i) { // to-do: profile
+            u32 color = (c >> (inv - i - 1) * bits) & mask;
+            if (solid || color) {
+                if (blend) {
+                    color = palette[color];
+                    u32 bg = *dest;
+                    bg = (bg * 0x00010001) & 0x07e0f81f;
+                    color = (color * 0x00010001) & 0x07e0f81f;
+                    bg += (color - bg) * alpha >> 5;
+                    bg &= 0x07e0f81f;
+                    *dest = (bg | bg >> 16);
+                } else {
+                    *dest = palette[color];
+                }
+            }
+            dest++;
+        });
+    }
+}
+
+WEAK void pixelCopy8BPP(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
     while(count--){
         if(u32 c = *src++)
             *dest = palette[c];
@@ -18,7 +45,7 @@ WEAK void pixelCopy8BPP(u16* dest, const u8* src, u32 count, const u16* palette)
     }
 }
 
-WEAK void pixelCopy8BPPA(u16* dest, const u8* src, u32 count, const u16* palette, u32 alpha) {
+WEAK void pixelCopy8BPPA(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha) {
     while(count--){
         if(u32 color = *src++){
             color = palette[color];
@@ -33,13 +60,13 @@ WEAK void pixelCopy8BPPA(u16* dest, const u8* src, u32 count, const u16* palette
     }
 }
 
-WEAK void pixelCopy8BPPS(u16* dest, const u8* src, u32 count, const u16* palette) {
+WEAK void pixelCopy8BPPS(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
     while(count--){
         *dest++ = palette[*src++];
     }
 }
 
-WEAK void pixelCopy8BPPAS(u16* dest, const u8* src, u32 count, const u16* palette, u32 alpha) {
+WEAK void pixelCopy8BPPAS(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha) {
     while(count--){
         u32 color = *src++;
         color = palette[color];
@@ -51,9 +78,39 @@ WEAK void pixelCopy8BPPAS(u16* dest, const u8* src, u32 count, const u16* palett
         *dest++ = (bg | bg >> 16);
     }
 }
+
+WEAK void pixelCopy4BPP(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
+    pixelCopy<4, false, false>(dest, src, count, palette, 0);
+}
+WEAK void pixelCopy2BPP(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
+    pixelCopy<2, false, false>(dest, src, count, palette, 0);
+}
+
+WEAK void pixelCopy4BPPA(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha) {
+    pixelCopy<4, true, false>(dest, src, count, palette, alpha);
+}
+WEAK void pixelCopy2BPPA(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha) {
+    pixelCopy<2, true, false>(dest, src, count, palette, alpha);
+}
+
+WEAK void pixelCopy4BPPS(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
+    pixelCopy<4, false, true>(dest, src, count, palette, 0);
+}
+WEAK void pixelCopy2BPPS(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
+    pixelCopy<2, true, false>(dest, src, count, palette, 0);
+}
+
+WEAK void pixelCopy4BPPAS(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha){
+    pixelCopy<4, true, true>(dest, src, count, palette, alpha);
+}
+WEAK void pixelCopy2BPPAS(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha){
+    pixelCopy<2, true, true>(dest, src, count, palette, alpha);
+}
+
 }
 
 WEAK void init() {
+    Graphics::palette = Graphics::generalPalette;
     Graphics::init();
     Audio::init();
     setMaxFPS(0);

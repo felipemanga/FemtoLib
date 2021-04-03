@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <type_traits>
 #include <array>
+#include <algorithm>
 
 using uptr = std::uintptr_t;
 using u64 = std::uint64_t;
@@ -28,77 +29,43 @@ using umin = typename _umin<(maxVal >> 32) ? 8 :
 
 #define decl_cast(type, value) static_cast<decltype(type)>(value)
 
-template<typename Func_t>
-class Function {
-
-    template<typename Type> struct helper;
-
-    template<typename Ret, typename ... Args>
-    struct helper<Ret(Args...)> {
-        using ptr = Ret (*) (uptr, Args...);
-    };
-
-    using Func = typename helper<Func_t>::ptr;
-
-    uptr data = 0;
-    Func func = nullptr;
-
-public:
-    constexpr Function() = default;
-
-    constexpr Function(Function&& other) :
-        data(other.data),
-        func(other.func) {}
-
-    constexpr Function(const Function &other) :
-        data(other.data),
-        func(other.func) {}
-
-    constexpr Function(Function* other) :
-        data(other->data),
-        func(other->func) {}
-
-    constexpr Function(uptr data, Func func) :
-        data{data},
-        func{func} {}
-
-    constexpr Function(Func_t* unwrapped) :
-        data{reinterpret_cast<uptr>(unwrapped)},
-        func{[](uptr data, auto ... args){
-            return reinterpret_cast<Func_t*>(data)(std::forward<decltype(args)>(args)...);
-        }} {}
-
-    constexpr Function& operator = (Function&& other) {
-        data = other.data;
-        func = other.func;
-        return *this;
+template <auto start, auto end, auto inc, class Func>
+constexpr void for_constexpr(Func&& f) {
+    if constexpr (start < end) {
+        f(std::integral_constant<decltype(start), start>());
+        for_constexpr<start + inc, end, inc>(f);
     }
+}
 
-    constexpr Function& operator = (const Function& other) {
-        data = other.data;
-        func = other.func;
-        return *this;
+template <auto start, auto end, class Func>
+constexpr void for_constexpr(Func&& f) {
+    for_constexpr<start, end, 1>(std::forward(f));
+}
+
+constexpr inline u32 nextPowerOfTwo(u32 v){
+    v |= v >> 16;
+    v |= v >> 8;
+    v |= v >> 4;
+    v |= v >> 2;
+    v |= v >> 1;
+    return v + 1;
+}
+
+constexpr inline bool isPowerOfTwo(u32 v){
+    if (!v) return true;
+    while (!(v & 1)) v >>= 1;
+    return v == 1;
+}
+
+constexpr inline u32 countTrailingZeros(u32 v){
+    u32 i = 0;
+    for (; i<32; ++i){
+        if ((v >> i) & 1) {
+            break;
+        }
     }
-
-    template <typename Class>
-    constexpr Function(const Class* obj) :
-        data{reinterpret_cast<uptr>(obj)},
-        func{[](uptr data, auto ... args){
-            return (*reinterpret_cast<Class*>(data))(std::forward<decltype(args)>(args)...);
-        }} {}
-
-    template <typename Class, std::enable_if_t<!std::is_pointer<Class>::value, int> = 0>
-    constexpr Function(const Class& obj) : Function(&obj) {}
-
-    template <typename ... Args>
-    auto operator () (Args&& ... args)  const {
-        return func(data, std::forward<Args>(args)...);
-    }
-
-    operator bool () const {
-        return func != nullptr;
-    }
-};
+    return i;
+}
 
 // template <typename Type>
 // using DataReferenceType = typename std::conditional<
@@ -192,70 +159,6 @@ public:
 
 // template <typename Type>
 // Data2D(Type&& data, u32, u32) -> Data2D<Type>;
-
-template<std::size_t count>
-class Bitmap4BPP : public std::array<u8, count> {
-public:
-    constexpr Bitmap4BPP(const std::array<u8, count>& in) : Bitmap4BPP::array(in) {}
-
-    constexpr operator const u8* () const {
-        return ptr();
-    }
-
-    constexpr operator Function<u32(u32 x, u32 y)> () const {
-        return this;
-    }
-
-    const u32 operator () (u32 x, u32 y) {
-        return (*this)[2 + x + y * ptr()[0]];
-    }
-
-    constexpr u32 operator [] (u32 index) const {
-        if (index < 2)
-            return Bitmap4BPP::array::operator[](index);
-        return index & 1
-            ? Bitmap4BPP::array::operator[](index >> 1) & 0xF
-            : Bitmap4BPP::array::operator[](index >> 1) >> 4;
-    }
-
-    const u8* ptr() const {
-        return Bitmap4BPP::array::data();
-    }
-
-    void set(u32 index, u32 value) {
-        u32 old = Bitmap4BPP::array::operator[](index >> 1);
-        if (index & 1) {
-            old &= 0x0F;
-            value <<= 4;
-        } else {
-            old &= 0xF0;
-        }
-        Bitmap4BPP::array::operator[](index >> 1) = old | value;
-    }
-};
-
-template <typename ... Arg>
-inline constexpr Bitmap4BPP<sizeof...(Arg)/2> toU4(Arg ... arg) {
-    std::array<int, sizeof...(Arg)> in = {static_cast<int>(arg)...};
-    std::array<u8, sizeof...(Arg)/2> out = {};
-    u32 i = 0;
-    u32 acc = 0;
-    for(auto v : in){
-        if (!(i & 1)) {
-            acc = v << 4;
-        } else {
-            acc |= v;
-            out[i >> 1] = acc;
-        }
-        i++;
-    }
-    return out;
-}
-
-template <typename ... Arg>
-inline constexpr std::array<u8, sizeof...(Arg)> toU8(Arg ... arg) {
-    return std::array<u8, sizeof...(Arg)>{ static_cast<u8>(arg)... };
-};
 
 #ifndef NO_FLOAT
 

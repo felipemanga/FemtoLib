@@ -89,16 +89,13 @@ namespace Graphics {
 
 #include "layers/solidColor.hpp"
 #include "layers/DrawList.hpp"
-#include "layers/RotoZoom.hpp"
 #include "fonts/tiny5x7.hpp"
 
 namespace Graphics {
     template<u32 bgColor = colorFromRGB(0x1155AA), u32 spriteCount = 100, const u8* font = fontTiny>
     inline void init(){
-        Graphics::palette = Graphics::generalPalette;
         static Graphics::Renderer<
             Graphics::layer::SolidColor<bgColor>,
-            Graphics::layer::RotoZoom,
             Graphics::layer::DrawList<spriteCount, font>
             > defaultGfx;
     }

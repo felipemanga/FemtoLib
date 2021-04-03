@@ -15,6 +15,8 @@
 
 #include "types.hpp"
 #include "constants.hpp"
+#include "Function.hpp"
+#include "Bitmap.hpp"
 #include "graphics.hpp"
 
 namespace Audio {
@@ -34,8 +36,6 @@ enum class Button {
     Right
 };
 
-void initDefaultAudio();
-void initDefaultGraphics();
 u32  getFreeRAM();
 u32  getTime();
 u32  getTimeMicro();
