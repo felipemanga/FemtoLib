@@ -40,6 +40,12 @@ public:
         h(h),
         frame(frame){}
 
+    BitmapFrame(const u8 *data, u32 frame = 0) :
+        data(data),
+        w(data[0]),
+        h(data[1]),
+        frame(frame){}
+
     constexpr BitmapFrame(const BitmapFrame<_bpp> &other, u32 frame) :
         data(other.data),
         w(other.w),

@@ -159,6 +159,19 @@ And you can have sprites that use different palettes:
     draw(ball, 10, 10); // draw ball with another palette
 ```
 
+The "regular" image format is also supported, but you will have to manually specify the BPP when drawing:
+
+```cpp
+    constexpr u8 image[] = {
+    3, 3,
+    0, 128, 0,
+    128, 255, 0,
+    0, 128, 0
+    };
+
+    draw<true, 8>(image, 10, 10); // note the "8"
+```
+
 ## The Rendering System
 
 FemtoLib's graphics system is capable of much more than this, due to its use of _layers_.
