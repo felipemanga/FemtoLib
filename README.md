@@ -227,24 +227,26 @@ For development, it is useful to not have a frame-rate limiter, so setting the m
 Now let's make our own init function.
 
 ```cpp
+    // We can make our renderer as a global variable to keep things simple
+    // If it is a global variable, it doesn't need to be static.
+    // Don't define renderer in a header file.
+    Graphics::Renderer<
+
+        // I'll use a Tilemap as a background layer.
+        // Each tile will be 16 pixels wide, 16 pixels tall.
+        Graphics::layer::Tilemap<16, 16>,
+
+        // Render text on top using the MonoText layer.
+        Graphics::layer::MonoText<fontTiny>
+
+    > renderer;
+
+    // Same thing for Audio. Just two channels, but running at 16KHz.
+    Audio::Sink<2, 16000> fancyAudio;
+
     void init() {
+        // now all that's left to do is set a palette and the max FPS
         Graphics::palette = Graphics::generalPalette; // still using the built-in palette
-
-        // static prevents our renderer from being destroyed after leaving init!
-        static Graphics::Renderer<
-
-            // I'll use a Tilemap as a background layer.
-            // Each tile will be 16 pixels wide, 16 pixels tall.
-            Graphics::layer::Tilemap<16, 16>,
-
-            // Render text on top using the MonoText layer.
-            Graphics::layer::MonoText<fontTiny>
-
-        > renderer;
-
-        // Just two channels, but running at 16KHz
-        static Audio::Sink<2, 16000> fancyAudio;
-
         setMaxFPS(30);
     }
 ```
@@ -255,8 +257,11 @@ As for the Tilemap layer, for it to do its thing, it needs a tileset and a tilem
 Those can be specified like this:
 
 ```cpp
-        Graphics::setTileset(tiles);
-        Graphics::setTilemap(map);
+void init() { 
+   ...
+    Graphics::setTileset(tiles);
+    Graphics::setTilemap(map);
+}
 ```
 
 Generally, both `tiles` and `map` are BITMAPs.

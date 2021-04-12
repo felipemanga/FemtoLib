@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <type_traits>
+#include <string_view>
 
 #if defined(POKITTO) || defined(POK_SIM)
 #include <Pokitto.h>
@@ -30,6 +31,11 @@ inline void LOGD( char c ){
 
 inline void LOG( const char *str ){
     printf("%s", str);
+}
+
+inline void LOG( std::string_view str ){
+    for(auto ch : str)
+        LOG(ch);
 }
 
 inline void LOGD( const char *str ){
@@ -177,6 +183,11 @@ inline OPT_SMALL void LOG( const char *str ){
     usart[0xC] = 3;
     while( *str )
         usart[0] = *str++;
+}
+
+inline void LOG( std::string_view str ){
+    for(auto ch : str)
+        LOG(ch);
 }
 
 inline OPT_SMALL void LOGD( const char *str ){

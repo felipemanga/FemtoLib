@@ -80,11 +80,16 @@ public:
         return load(file);
     }
     
-    static const uint8_t *load(File &file){
+    static const uint8_t *load(File &file, int amount = 0){
         if (!file) return nullptr;
-        LOG("Hotswap ", file.size() * 100 / (pageCount * pageSize), "% full\n");
+        if (!amount) amount = file.size() - file.tell();
 
-        for( int page = 0; page < pageCount; ++page) loadPage(file, page);
+        LOG("Hotswap ", amount * 100 / (pageCount * pageSize), "% full\n");
+
+        for( int page = 0; page < pageCount && amount > 0; ++page) {
+            loadPage(file, page);
+            amount -= pageSize;
+        }
         return swapData;
     }
     

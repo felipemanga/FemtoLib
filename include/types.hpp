@@ -29,6 +29,50 @@ using umin = typename _umin<(maxVal >> 32) ? 8 :
 
 #define decl_cast(type, value) static_cast<decltype(type)>(value)
 
+constexpr u32 operator "" _hash(const char *str, std::size_t len){
+    u32 v1 = 5381, v2 = 2166136261;
+    while(len--){
+        u32 c = *str++;
+        v1 = (v1 * 251) ^ c;
+        v2 = (v2 ^ c) * 16777619;
+    }
+    return v1 * 13 + v2;
+}
+
+class StringInfo {
+    const std::string_view str;
+    const u32 hash;
+    const u32 length;
+
+    static constexpr std::tuple<const std::string_view, u32, u32> strprops(const std::string_view view) {
+        u32 v1 = 5381, v2 = 2166136261;
+        for(auto c : view){
+            v1 = (v1 * 251) ^ c;
+            v2 = (v2 ^ c) * 16777619;
+        }
+        u32 v = v1 * 13 + v2;
+        return {view, v, view.end() - view.begin()};
+    }
+
+public:
+    constexpr StringInfo(const std::tuple<const std::string_view, u32, u32>& t) :
+        str(std::get<0>(t)), hash(std::get<1>(t)), length(std::get<2>(t)) {}
+
+    constexpr StringInfo(const std::string_view view) :
+        StringInfo(strprops(view)) {}
+
+    constexpr StringInfo(const char *str) :
+        StringInfo(strprops(str)) {}
+
+    operator u32 () const { return hash; }
+
+    operator const std::string_view () const { return str; }
+
+    u32 size() const { return length; }
+};
+
+// https://nilsdeppe.com/posts/for-constexpr
+
 template <auto start, auto end, auto inc, class Func>
 constexpr void for_constexpr(Func&& f) {
     if constexpr (start < end) {
@@ -40,6 +84,54 @@ constexpr void for_constexpr(Func&& f) {
 template <auto start, auto end, class Func>
 constexpr void for_constexpr(Func&& f) {
     for_constexpr<start, end, 1>(std::forward(f));
+}
+
+
+// https://stackoverflow.com/questions/35941045/can-i-obtain-c-type-names-in-a-constexpr-way
+
+template <typename T> constexpr std::string_view type_name();
+
+template <>
+constexpr std::string_view type_name<void>()
+{ return "void"; }
+
+namespace detail {
+
+using type_name_prober = void;
+
+template <typename T>
+constexpr std::string_view wrapped_type_name()
+{
+#ifdef __clang__
+    return __PRETTY_FUNCTION__;
+#elif defined(__GNUC__)
+    return __PRETTY_FUNCTION__;
+#elif defined(_MSC_VER)
+    return __FUNCSIG__;
+#else
+#error "Unsupported compiler"
+#endif
+}
+
+constexpr std::size_t wrapped_type_name_prefix_length() {
+    return wrapped_type_name<type_name_prober>().find(type_name<type_name_prober>());
+}
+
+constexpr std::size_t wrapped_type_name_suffix_length() {
+    return wrapped_type_name<type_name_prober>().length()
+        - wrapped_type_name_prefix_length()
+        - type_name<type_name_prober>().length();
+}
+
+} // namespace detail
+
+template <typename T>
+constexpr std::string_view type_name() {
+    constexpr auto wrapped_name = detail::wrapped_type_name<T>();
+    constexpr auto prefix_length = detail::wrapped_type_name_prefix_length();
+    constexpr auto suffix_length = detail::wrapped_type_name_suffix_length();
+    constexpr auto type_name_length = wrapped_name.length() - prefix_length - suffix_length;
+    return wrapped_name.substr(prefix_length, type_name_length);
 }
 
 constexpr inline u32 nextPowerOfTwo(u32 v){
@@ -265,6 +357,28 @@ struct Point2D {
         x -= other.x;
         y -= other.y;
         return *this;
+    }
+
+
+    Point2D operator + (const Point2D &other) {
+        Point2D c{*this};
+        c.x += other.x;
+        c.y += other.y;
+        return c;
+    }
+
+    Point2D operator * (const Point2D &other) {
+        Point2D c{*this};
+        c.x *= other.x;
+        c.y *= other.y;
+        return c;
+    }
+
+    Point2D operator - (const Point2D &other) {
+        Point2D c{*this};
+        c.x -= other.x;
+        c.y -= other.y;
+        return c;
     }
 
     template <typename IterableCollection, typename Other>
