@@ -4,6 +4,9 @@
 #include <type_traits>
 #include <array>
 #include <algorithm>
+#include <string_view>
+#include <tuple>
+
 
 using uptr = std::uintptr_t;
 using u64 = std::uint64_t;
