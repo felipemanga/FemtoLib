@@ -25,6 +25,8 @@ WEAK void showLogo(){
     if (Audio::internal::sinkInstance) {
         logo.openRO("data/logo.raw");
         Audio::setVolume(volume << 8);
+    } else {
+        logo.close();
     }
 
     if (!logo){
