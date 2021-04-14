@@ -4,6 +4,8 @@
 #include <emscripten.h>
 #endif
 
+#include <unistd.h>
+
 template<Button button> bool buttonState;
 SDL_AudioDeviceID audioDevice;
 static s32 scanlineY;
@@ -12,6 +14,8 @@ static SDL_Renderer *renderer;
 static SDL_Surface *screen, *vscreen;
 static u16 *frameBuffer;
 static void *nextHook;
+static s32 windowZoom = 3;
+static constexpr s32 windowZoomMax = 4;
 
 u32 getTimeMicro() {
     auto timePoint = std::chrono::high_resolution_clock::now();
@@ -45,6 +49,20 @@ static void redraw() {
     SDL_BlitScaled( vscreen, nullptr, screen, nullptr );
     SDL_LockSurface(vscreen);
     SDL_UpdateWindowSurface(window);
+}
+
+static void applyWindowZoom()
+{
+    SDL_SetWindowSize(window, screenWidth * windowZoom, screenHeight * windowZoom);
+    screen = SDL_GetWindowSurface( window );
+}
+
+static void cycleWindowZoom()
+{
+    windowZoom++;
+    if (windowZoom > windowZoomMax)
+        windowZoom = 1;
+    applyWindowZoom();
 }
 
 void setBacklight(f32 value) {
@@ -94,6 +112,7 @@ static void* updateEvents(bool isFrame) {
             case SDLK_LEFT: buttonState<Button::Left> = isDown; break;
             case SDLK_RIGHT: buttonState<Button::Right> = isDown; break;
             case SDLK_ESCAPE: exit(0);
+            case SDLK_w: if( e.type == SDL_KEYDOWN) cycleWindowZoom(); break;
             }
         }
     }
@@ -127,10 +146,12 @@ int main(){
         LOG("Error initializing SDL: ", SDL_GetError(), "\n");
         return -1;
     }
+    
+    chdir(SDL_GetBasePath());
 
     window = SDL_CreateWindow(
         "Femto simulator",
-        0, 0, screenWidth, screenHeight,
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screenWidth*windowZoom, screenHeight*windowZoom,
         SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (!window) {
@@ -140,6 +161,7 @@ int main(){
 
     renderer = SDL_CreateRenderer(window, -1, /* SDL_RENDERER_PRESENTVSYNC | */ SDL_RENDERER_SOFTWARE);
 
+    applyWindowZoom();
     screen = SDL_GetWindowSurface( window );
     vscreen = SDL_CreateRGBSurface(
 	0, // flags
