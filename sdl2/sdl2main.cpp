@@ -49,7 +49,7 @@ static void redraw() {
 
 void setBacklight(f32 value) {
     value = (value < 0) ? f32(0) : value;
-    value = (value > 1) ? f32(1) : value;
+    value = (value >= 1) ? s24q8ToF32(255) : value;
     backlight = value;
 }
 
