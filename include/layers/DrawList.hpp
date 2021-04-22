@@ -15,11 +15,11 @@ namespace Graphics {
             umin<screenHeight> y;
             umin<screenHeight> maxY;
             umin<screenWidth> width;
-            u8 b1;
+            umin<screenWidth> b1;
             union {
                 struct {
-                    u8 b2, b3;
-                    u16 s;
+                    umin<screenWidth> b2, b3;
+                    umin<screenWidth * 2> s;
                 };
                 uptr udata;
             };
@@ -691,6 +691,43 @@ namespace Graphics {
         end -= camera;
         line(round(start.x), round(start.y), round(end.x), round(end.y), color);
     }
+
+    // inline void fillCircle(s32 x, s32 y, s32 radius, u32 color = Graphics::primaryColor) {
+    //     using namespace _drawListInternal;
+    //     s32 centerX = x, centerY = y;
+
+    //     x -= radius;
+    //     s32 w = x + radius * 2;
+    //     y -= radius;
+    //     s32 h = y + radius * 2;
+
+    //     if(x < 0){ w += x; x = 0; }
+    //     if(u32(x + w) >= screenWidth) w = screenWidth - x;
+    //     if(y < 0){ h += y; y = 0; }
+    //     if(u32(y) >= screenHeight || y + h <= 0 || u32(x) >= screenWidth || (x + w) <= 0)
+    //         return;
+
+    //     draw_t f = [](u16 *line, Cmd &s, u32 y){
+    //                    auto c = reinterpret_cast<uptr>(s.data);
+    //                    int w = s.width;
+    //                    line += s.x;
+    //                    while(w--){
+    //                        *line++ = c;
+    //                    }
+    //                };
+
+    //     add(Cmd{
+    //             .data = reinterpret_cast<void*>(color),
+    //             .draw = f,
+    //             .x = decl_cast(Cmd::x, x),
+    //             .y = decl_cast(Cmd::y, y),
+    //             .maxY = decl_cast(Cmd::maxY, h),
+    //             .width = decl_cast(Cmd::width, w),
+    //             .b2 = centerX,
+    //             .b3 = centerY,
+    //             .s = radius * radius
+    //         });
+    // }
 
     inline void fillRect(s32 x, s32 y, s32 w, s32 h, u32 color = Graphics::primaryColor) {
         using namespace _drawListInternal;

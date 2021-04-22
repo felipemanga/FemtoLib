@@ -94,9 +94,11 @@ namespace Graphics {
 namespace Graphics {
     template<u32 bgColor = colorFromRGB(0x1155AA), u32 spriteCount = 100, const u8* font = fontTiny>
     inline void init(){
-        static Graphics::Renderer<
+        using Type = Graphics::Renderer<
             Graphics::layer::SolidColor<bgColor>,
             Graphics::layer::DrawList<spriteCount, font>
-            > defaultGfx;
+            >;
+        static __attribute__((align(alignof(Type)))) u8 defaultGfx[sizeof(Type)];
+        new (defaultGfx) Type();
     }
 }
