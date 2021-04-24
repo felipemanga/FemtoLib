@@ -66,7 +66,9 @@ u32 getFreeRAM() {
 }
 
 u32 getTime() {
-    return ::time(NULL);
+    auto timePoint = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count();
+    // return ::time(NULL);
 }
 
 static void* updateEvents(bool isFrame) {
@@ -78,22 +80,53 @@ static void* updateEvents(bool isFrame) {
             }
             continue;
         }
-
-	if( e.type == SDL_QUIT ){
+#ifndef __EMSCRIPTEN__
+	if( e.type == SDL_QUIT )
             exit(0);
-        }
+#endif
 
 	if( e.type == SDL_KEYUP || e.type == SDL_KEYDOWN ){
             bool isDown = e.type == SDL_KEYDOWN;
 	    switch( e.key.keysym.sym ){
-            case SDLK_a: buttonState<Button::A> = isDown; break;
-            case SDLK_b: buttonState<Button::B> = isDown; break;
-            case SDLK_c: buttonState<Button::C> = isDown; break;
-            case SDLK_UP: buttonState<Button::Up> = isDown; break;
-            case SDLK_DOWN: buttonState<Button::Down> = isDown; break;
-            case SDLK_LEFT: buttonState<Button::Left> = isDown; break;
-            case SDLK_RIGHT: buttonState<Button::Right> = isDown; break;
-            case SDLK_ESCAPE: exit(0);
+            case SDLK_LCTRL:
+            case SDLK_a:
+            case SDLK_z:
+                buttonState<Button::A> = isDown;
+                break;
+
+            case SDLK_LALT:
+            case SDLK_b:
+            case SDLK_s:
+            case SDLK_x:
+                buttonState<Button::B> = isDown;
+                break;
+
+            case SDLK_c:
+            case SDLK_d:
+                buttonState<Button::C> = isDown;
+                break;
+
+            case SDLK_UP:
+                buttonState<Button::Up> = isDown;
+                break;
+
+            case SDLK_DOWN:
+                buttonState<Button::Down> = isDown;
+                break;
+
+            case SDLK_LEFT:
+                buttonState<Button::Left> = isDown;
+                break;
+
+            case SDLK_RIGHT:
+                buttonState<Button::Right> = isDown;
+                break;
+
+#ifndef __EMSCRIPTEN__
+            case SDLK_ESCAPE:
+                exit(0);
+                break;
+#endif
             }
         }
     }
@@ -129,7 +162,7 @@ int main(){
     }
 
     window = SDL_CreateWindow(
-        "Femto simulator",
+        PROJECT_NAME,
         0, 0, screenWidth, screenHeight,
         SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
 

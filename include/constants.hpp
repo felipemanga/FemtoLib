@@ -56,11 +56,13 @@ inline constexpr u32 blendColors(u32 fg, u32 bg, f32 falpha) {
 #endif
 
 inline constexpr u32 bppForColorIndex(u32 i) {
+    if (!i) return 1;
     auto bits = 1 + countTrailingZeros(nextPowerOfTwo(i) >> 1);
     return isPowerOfTwo(bits) ? bits : nextPowerOfTwo(bits);
 }
 
 #ifdef TARGET_AVR
+#define BITMAP16BPP(name, ...) constexpr inline auto name PROGMEM = make_Bitmap<16>(__VA_ARGS__);
 #define BITMAP8BPP(name, ...) constexpr inline auto name PROGMEM = make_Bitmap<8>(__VA_ARGS__);
 #define BITMAP4BPP(name, ...) constexpr inline auto name PROGMEM = make_Bitmap<4>(__VA_ARGS__);
 #define BITMAP2BPP(name, ...) constexpr inline auto name PROGMEM = make_Bitmap<2>(__VA_ARGS__);
@@ -68,6 +70,7 @@ inline constexpr u32 bppForColorIndex(u32 i) {
 #define BITMAP(name, W, H, ...) constexpr inline auto name PROGMEM = \
         make_Bitmap< bppForColorIndex(std::max<s32>({__VA_ARGS__})) >(W, H, __VA_ARGS__);
 #else
+#define BITMAP16BPP(name, ...) constexpr inline auto name = make_Bitmap<16>(__VA_ARGS__);
 #define BITMAP8BPP(name, ...) constexpr inline auto name = make_Bitmap<8>(__VA_ARGS__);
 #define BITMAP4BPP(name, ...) constexpr inline auto name = make_Bitmap<4>(__VA_ARGS__);
 #define BITMAP2BPP(name, ...) constexpr inline auto name = make_Bitmap<2>(__VA_ARGS__);

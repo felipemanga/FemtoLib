@@ -7,7 +7,7 @@ namespace Graphics {
         using TileCopy = Function<void(u16*, u32 x, u32 y, u32 width)>;
         using TileSource = Function<TileCopy(u32, u32)>;
 
-        template <u32 _tileWidth, u32 _tileHeight>
+        template <u32 _tileWidth, u32 _tileHeight, bool _transparent = true>
         class Tiles {
         public:
             constexpr static u32 tileWidth = _tileWidth;
@@ -58,12 +58,16 @@ namespace Graphics {
                 }
 
                 for (u32 column = rowWidth - 2; column < rowWidth && line < end; ++column){
-                    if (row[column]) {
+                    if (auto func = row[column]) {
                         u16 tmp[tileWidth];
-                        for(u32 x = 0; x < tileWidth; ++x)
-                            tmp[x] = line[x];
-                        row[column](tmp, 0, counter, tileWidth);
                         auto m = std::min<u32>(end - line, tileWidth);
+
+                        if (_transparent) {
+                            for(u32 x = 0; x < m; ++x)
+                                tmp[x] = line[x];
+                        }
+
+                        func(tmp, 0, counter, tileWidth);
                         for(u32 x = 0; x < m; ++x)
                             line[x] = tmp[x];
                     }
@@ -85,9 +89,10 @@ namespace Graphics {
 
         template<
             u32 tileWidth,
-            u32 tileHeight
+            u32 tileHeight,
+            bool transparent = true
             >
-        class Tilemap : public Graphics::layer::Tiles<tileWidth, tileHeight> {
+        class Tilemap : public Graphics::layer::Tiles<tileWidth, tileHeight, transparent> {
 
             static constexpr u32 tileSize = tileWidth * tileHeight;
 
@@ -115,7 +120,7 @@ namespace Graphics {
     }
 
     template<typename Map>
-    void setTilemap(Map &map){
+    void setTilemap(const Map &map){
         *Graphics::layer::_internal::getTile = map;
     }
 
@@ -124,7 +129,7 @@ namespace Graphics {
             reinterpret_cast<uptr>(ts),
             [](uptr uts, u32 tileId) -> layer::TileCopy {
                 auto ts = reinterpret_cast<const u8*>(uts);
-                auto bmp = ts + tileId * (ts[0] * ts[0]);
+                auto bmp = ts + (tileId - 1) * (ts[0] * ts[0]);
                 return {
                     reinterpret_cast<uptr>(bmp),
                     [](uptr ubmp, u16 *line, u32 x, u32 y, u32 width){

@@ -76,8 +76,8 @@ bool isPressed(Button button) {
 }
 
 void setBacklight(f32 value) {
-    if (value > 1)
-        value = 1;
+    if (value >= 1)
+        value = s24q8ToF32(255);
     LPC_SCT0->MATCHREL1 = round(LPC_SCT0->MATCHREL0 * value);
     LPC_SCT0->CTRL &= ~(1 << 2);
 }

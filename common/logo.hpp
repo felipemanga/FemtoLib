@@ -87,7 +87,7 @@ WEAK void showLogo(){
         }
 
         bool ended = (src && src->ended())
-            || (getTime() - startTime > 2000)
+            || (!src && (getTime() - startTime > 2000))
             || isPressed(Button::C);
 
         if (ended) {

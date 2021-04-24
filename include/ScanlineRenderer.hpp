@@ -68,8 +68,13 @@ namespace Graphics {
             fillers{std::get<Args>(args)...} {}
 
         template <u32 num>
-        auto get(){
+        auto& get(){
             return std::get<num>(args);
+        }
+
+        template <typename Type>
+        auto& get(){
+            return std::get<Type>(args);
         }
 
         template <typename Type>

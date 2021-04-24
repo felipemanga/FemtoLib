@@ -9,6 +9,24 @@ struct Point2D {
         this->y = y;
     }
 
+    f32 lengthSquared() {
+        return x * x + y * y;
+    }
+
+    f32 length() {
+        return sqrt(lengthSquared());
+    }
+
+    Point2D normalize() {
+        Point2D point = *this;
+        f32 len = length();
+        if (len) {
+            point.x /= len;
+            point.y /= len;
+        }
+        return point;
+    }
+
     void rotateXY(f32 rad){
         f32 cr  = cos(rad);
         f32 sr  = sin(rad);
@@ -41,6 +59,12 @@ struct Point2D {
         return *this;
     }
 
+    Point2D operator + (f32 scalar) {
+        Point2D c{*this};
+        c.x += scalar;
+        c.y += scalar;
+        return c;
+    }
 
     Point2D operator + (const Point2D &other) {
         Point2D c{*this};
@@ -53,6 +77,13 @@ struct Point2D {
         Point2D c{*this};
         c.x *= other.x;
         c.y *= other.y;
+        return c;
+    }
+
+    Point2D operator * (f32 scalar) {
+        Point2D c{*this};
+        c.x *= scalar;
+        c.y *= scalar;
         return c;
     }
 

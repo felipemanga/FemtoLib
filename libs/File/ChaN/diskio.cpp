@@ -688,19 +688,26 @@ DSTATUS disk_initialize (
     if (!(m_Status & STA_NOINIT))
         return m_Status;
 
-    //Send 80 dummy clocks with /CS deasserted and DI held high
-    //m_Cs = 1;
-    LPC_GPIO_PORT->SET[0] = 1 << 7; 
+    for (int tries = 0; tries < 10; ++tries) {
+        //Send 80 dummy clocks with /CS deasserted and DI held high
+        //m_Cs = 1;
+        LPC_GPIO_PORT->SET[0] = 1 << 7;
 
-    for (int i = 0; i < 100; i++)
-        m_Spiwrite(0xFF);
+        for (int i = 0; i < 100; i++)
+            m_Spiwrite(0xFF);
 
-    //Send CMD0(0x00000000) to reset the card
-    if (commandTransaction(CMD0, 0x00000000) != 0x01) {
-        //Initialization failed
-        m_CardType = CARD_UNKNOWN;
-        return m_Status;
+        //Send CMD0(0x00000000) to reset the card
+        if (commandTransaction(CMD0, 0x00000000) != 0x01) {
+            //Initialization failed
+            m_CardType = CARD_UNKNOWN;
+            continue;
+        }
+
+        break;
     }
+
+    if (m_CardType == CARD_UNKNOWN)
+        return m_Status;
 
     //Send CMD8(0x000001AA) to see if this is an SDCv2 card
     if (commandTransaction(CMD8, 0x000001AA, &resp) == 0x01) {

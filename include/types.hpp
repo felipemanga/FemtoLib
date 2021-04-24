@@ -30,6 +30,17 @@ using umin = typename _umin<(maxVal >> 32) ? 8 :
                                 (maxVal >> 8) ? 2 :
                                 1>::type;
 
+template<u32 size = 64> struct _smin { using type = s64; };
+template<> struct _smin<4> { using type = s32; };
+template<> struct _smin<2> { using type = s16; };
+template<> struct _smin<1> { using type = s8; };
+
+template<u64 maxVal>
+using smin = typename _smin<(maxVal >> 31) ? 8 :
+                                (maxVal >> 15) ? 4 :
+                                (maxVal >> 7) ? 2 :
+                                1>::type;
+
 #define decl_cast(type, value) static_cast<decltype(type)>(value)
 
 constexpr u32 operator "" _hash(const char *str, std::size_t len){
@@ -277,55 +288,7 @@ inline constexpr f32 toRadians(f32 deg){
 
 #else
 
-#define FIXED_POINTS_USE_NAMESPACE
-#define FIXED_POINTS_NO_RANDOM
-#include <FixedPoints/FixedPoints.h>
-using f32 = FixedPoints::SFixed<23, 8>;
-
-inline constexpr f32 PI = FixedPoints::Pi<f32>;
-
-inline constexpr s32 f32ToS24q8(f32 f){
-    return f.getInternal();
-}
-
-inline constexpr f32 s24q8ToF32(s32 s){
-    return f32::fromInternal(s);
-}
-
-inline constexpr f32 sin(f32 rad) {
-    using trig = Trig<(PI/2).getInternal(), 255>;
-    return f32::fromInternal(trig::sin(rad.getInternal()));
-}
-
-inline constexpr f32 cos(f32 rad) {
-    using trig = Trig<(PI/2).getInternal(), 255>;
-    return f32::fromInternal(trig::cos(rad.getInternal()));
-}
-
-inline constexpr f32 toRadians(f32 deg){
-    constexpr auto iPI = (PI.getInternal() << 8) / 180;
-    return f32::fromInternal(deg.getInternal() * iPI >> 16);
-}
-
-inline constexpr s32 round(f32 v){
-    return (v.getInternal() + (1 << 7)) >> 8;
-}
-
-inline constexpr f32 floor(f32 v){
-    return f32::fromInternal(static_cast<s32>(v.getInternal()) >> 8 << 8);
-}
-
-inline constexpr s32 ceil(f32 v){
-    s32 i = v.getInternal();
-    if(i & 0xFF) i += 1 << 8;
-    return i >> 8;
-}
-
-namespace std {
-    inline constexpr f32 abs(f32 v) {
-        return v < 0 ? -v : v;
-    }
-}
+#include "fixed.hpp"
 
 #endif
 

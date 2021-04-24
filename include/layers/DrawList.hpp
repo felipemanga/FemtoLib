@@ -11,8 +11,8 @@ namespace Graphics {
         struct Cmd {
             const void *data;
             draw_t draw;
-            umin<screenWidth> x;
-            umin<screenHeight> y;
+            smin<screenWidth> x;
+            smin<screenHeight> y;
             umin<screenHeight> maxY;
             umin<screenWidth> width;
             umin<screenWidth> b1;
@@ -209,14 +209,17 @@ namespace Graphics {
             auto data = static_cast<const u8*>(s.data);
             int w = s.width;
             const uint8_t *src = data + y * (w / (8 / bits));
-            if (s.x < 0) {
-                src -= s.x;
-                w += s.x;
+            s32 sx = s.x;
+
+            if (sx < 0) {
+                src -= sx;
+                w += sx;
+                sx = 0;
             } else if(s.x > 0) {
                 line += s.x;
             }
-            if (u32(s.x + w) >= screenWidth) {
-                w = screenWidth - s.x;
+            if (u32(sx + w) >= screenWidth) {
+                w = screenWidth - sx;
             }
 
             auto palette = reinterpret_cast<const u16 *>(s.udata);
@@ -558,7 +561,7 @@ namespace Graphics {
                     maxY = screenHeight;
                 sb.maxY = maxY;
 
-                for (u32 y=sb.y; y<maxY; ++y){
+                for (s32 y=std::max<s32>(0, sb.y); y<maxY; ++y) {
                     u32 i;
                     for(i=0; i<_cmdsPerLine - 1; ++i){
                         if(cmdsPerLine[y][i] == 0xFF) break;
@@ -595,10 +598,9 @@ namespace Graphics {
         public:
 
             FastDrawList(const u8 *font){
-                _drawListInternal::font = font;
                 clear();
                 bind();
-                bindText();
+                bindText(font);
             }
 
             FastDrawList(){
@@ -606,7 +608,8 @@ namespace Graphics {
                 bind();
             }
 
-            void bindText() {
+            void bindText(const u8 *font = _drawListInternal::font) {
+                _drawListInternal::font = font;
                 _graphicsInternal::_print = _drawListInternal::_print;
             }
 
@@ -620,7 +623,7 @@ namespace Graphics {
                                             };
             }
 
-            void update(u16 *line, u32 y){
+            void operator() (u16 *line, u32 y){
                 auto cmds = &cmdsPerLine[y][0];
                 for(u32 i = 0; i < _cmdsPerLine; ++i){
                     if (cmds[i] == 0xFF) break;
@@ -775,8 +778,8 @@ namespace Graphics {
     inline void draw(const BitmapFrame<bits>& bitmap, s32 x = 0, s32 y = 0, f32 falpha = 1){
         using namespace _drawListInternal;
 
-        if (x + bitmap.width() <= 0 || u32(x) >= screenWidth) return;
-        if (y + bitmap.height() <= 0 || u32(y) >= screenHeight) return;
+        if (s32(x + bitmap.width()) <= 0 || x >= s32(screenWidth)) return;
+        if (s32(y + bitmap.height()) <= 0 || y >= s32(screenHeight)) return;
 
         u8 alpha = round(falpha * 255);
         alpha = (u32(alpha) + 4) >> 3;
