@@ -4,7 +4,6 @@ namespace Audio {
     class SFX8VolumeSource {
         u32 len;
         const u8 *head;
-        u8 volume;
 
         static void copy(u8 *buffer, void *ptr){
             auto& state = *reinterpret_cast<SFX8VolumeSource*>(ptr);
@@ -23,21 +22,16 @@ namespace Audio {
             u32 len = std::min<u32>(512, state.len);
             u32 i=0;
             for(i=0; i<len; ++i){
-                s32 s = (state.volume*(s32(state.head[i]) - 128) >> 8);
-                s += buffer[i] + 128;
-                if(s<0) s = 0;
-                else if(s > 0xFF) s = 0xFF;
-                buffer[i];
+                s32 s = (state.volume*(s32(state.head[i]) - 127) >> 8) + 127;
+                buffer[i] = Audio::mix(buffer[i], s);
             }
-
-            for(; i<512; ++i)
-                buffer[i] = 128;
 
             state.head += len;
             state.len -= len;
         }
 
     public:
+        u8 volume;
 
         template<u32 channel = 1>
         static SFX8VolumeSource& play(const u8 *data, u32 len){
@@ -48,9 +42,9 @@ namespace Audio {
             return state;
         }
 
-        template<u32 channel = 1, bool lowLatency = true, u32 len = 0>
+        template<u32 channel = 1, u32 len = 0>
         static SFX8VolumeSource& play(const u8 (&data)[len]){
-            return play<channel, lowLatency>(data, len);
+            return play<channel>(data, len);
         }
     };
 

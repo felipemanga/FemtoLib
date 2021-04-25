@@ -811,14 +811,12 @@ namespace Graphics {
 
     template <bool transparent = true, typename BitmapLike = BitmapFrame<0>>
     inline void draw(const BitmapLike &data, Point2D topLeft, f32 falpha = 1){
-        BitmapFrame<BitmapLike::bitsPerPixel> frame = data;
         topLeft -= camera;
         draw<transparent, BitmapLike::bitsPerPixel, true>(data, round(topLeft.x), round(topLeft.y), falpha);
     }
 
     template <bool transparent = true, typename BitmapLike = BitmapFrame<0>>
     inline void draw(const BitmapLike &data, s32 x, s32 y, f32 falpha = 1){
-        BitmapFrame<BitmapLike::bitsPerPixel> frame = data;
         draw<transparent, BitmapLike::bitsPerPixel, true>(data, x, y, falpha);
     }
 

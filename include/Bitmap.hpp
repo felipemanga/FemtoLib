@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Femto"
+#include "types.hpp"
+#include <algorithm>
 #include <type_traits>
 
 template<u32 _bpp>
@@ -108,52 +110,61 @@ public:
     }
 
     void fill(type value) {
-        auto w = width();
-        auto h = height();
-        Bitmap::array::fill(value);
-        ptr()[0] = w;
-        ptr()[1] = h;
+        // auto w = width();
+        // auto h = height();
+        // Bitmap::array::fill(value);
+        // ptr()[0] = w;
+        // ptr()[1] = h;
+        MemOps::set(ptr() + 2, 0, count - 2);
     }
 
+    template<bool optimizeForLongLines = false>
     void drawHLine8(s32 x, s32 y, s32 w, u32 color) {
         u32 bitmapWidth = width();
         if (u32(x + w) > bitmapWidth) w = bitmapWidth - x;
-        if (u32(x) >= bitmapWidth) return;
+        if (x < 0){ w -= x; x = 0; }
+        if (w <= 0 || u32(x) >= bitmapWidth || u32(y) >= height()) return;
 
         auto pos = ptr() + 2 + x + y * bitmapWidth;
 
-        if (w > 8) {
-            color &= 0xFF;
-            color |= color << 8;
-            color |= color << 16;
+        if (optimizeForLongLines) {
+            if (w > 8) {
+                while(uptr(pos) & 0x3){
+                    *pos++ = color;
+                    w--;
+                }
 
-            while(uptr(pos) & 0x3){
-                *pos++ = color;
-                w--;
-            }
-
-            while(w >= 4){
-                *reinterpret_cast<u32*>(pos) = color;
-                pos += 4;
-                w -= 4;
+                while(w >= 4){
+                    *reinterpret_cast<u32*>(pos) = color;
+                    pos += 4;
+                    w -= 4;
+                }
             }
         }
 
-        while (w-- > 0) {
-            *pos++ = color;
+        pos += w;
+        w = -w;
+        while (w++ < 0) {
+            pos[w] = color;
         }
     }
 
     void drawHLine(u32 x, u32 y, s32 w, u32 color) {
-        if (x >= width() || y >= height()) return;
         if constexpr (_bpp == 8) drawHLine8(x, y, w, color);
     }
 
+/* * /
     void fillTriangle( s32 x0, s32 y0,
                        s32 x1, s32 y1,
                        s32 x2, s32 y2,
                        u32 col ){
         s32 a, b, y, last, tmp;
+
+        if constexpr (_bpp == 8) {
+            col &= 0xFF;
+            col |= col << 8;
+            col |= col << 16;
+        }
 
         a = width();
         b = height();
@@ -212,10 +223,10 @@ public:
                 b = x0 + ((sb * dy02) >> 16);
                 sa += dx01;
                 sb += dx02;
-                /* longhand:
-                   a = x0 + (x1 - x0) * (y - y0) / (y1 - y0);
-                   b = x0 + (x2 - x0) * (y - y0) / (y2 - y0);
-                */
+                // longhand:
+                //    a = x0 + (x1 - x0) * (y - y0) / (y1 - y0);
+                //    b = x0 + (x2 - x0) * (y - y0) / (y2 - y0);
+
                 if (a > b){
                     tmp = a;
                     a = b;
@@ -246,6 +257,208 @@ public:
                 drawHLine(a, y, b - a, col);
             }
         }
+    }
+/*/
+   // Original from http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
+    void fillTriangle(s32 x1, s32 y1, s32 x2, s32 y2, s32 x3, s32 y3, u32 color) {
+	if (y1 > y2) {
+            std::swap(y1, y2);
+            std::swap(x1, x2);
+        }
+
+	if (y1 > y3) {
+            std::swap(y1, y3);
+            std::swap(x1, x3);
+        }
+
+	if (y2 > y3) {
+            std::swap(y2, y3);
+            std::swap(x2, x3);
+        }
+
+	u32 t1x = x1, t2x = x1, y = y1, minx, maxx, t1xp, t2xp;
+	bool changed1 = false;
+	bool changed2 = false;
+	s32 signx1 = 1, signx2 = 1,
+            dx1 = x2 - x1, dy1 = y2 - y1,
+            dx2 = x3 - x1, dy2 = y3 - y1;
+	u32 e1, e2;
+
+        if (dx1 < 0) {
+            dx1 = -dx1;
+            signx1 = -1;
+        }
+
+        if (dx2 < 0) {
+            dx2 = -dx2;
+            signx2 = -1;
+        }
+
+        changed1 = dy1 > dx1;
+	if (changed1)
+            std::swap(dx1, dy1);
+
+        changed2 = dy2 > dx2;
+	if (changed2)
+            std::swap(dy2,dx2);
+
+	e2 = dx2 >> 1;
+
+        // Flat top, just process the second half
+        if (y1 != y2) {
+            e1 = dx1 >> 1;
+            for (u32 i = 0; i < dx1;) {
+                t1xp = 0;
+                t2xp = 0;
+
+                if (t1x < t2x) {
+                    minx = t1x;
+                    maxx = t2x;
+                } else {
+                    minx = t2x;
+                    maxx = t1x;
+                }
+
+                // process first line until y value is about to change
+                while (i < dx1) {
+                    i++;
+                    e1 += dy1;
+                    while (e1 >= dx1) {
+                        e1 -= dx1;
+                        if (!changed1)
+                            goto next1;
+                        t1xp=signx1;
+                    }
+                    if (changed1)
+                        break;
+                    t1x += signx1;
+                }
+
+                // Move line
+            next1:
+
+                // process second line until y value is about to change
+                while (1) {
+                    e2 += dy2;
+                    while (e2 >= dx2) {
+                        e2 -= dx2;
+                        if (!changed2)
+                            goto next2;
+                        t2xp = signx2;
+                    }
+                    if (changed2)
+                        break;
+                    t2x += signx2;
+                }
+
+            next2:
+                if (minx > t1x)
+                    minx = t1x;
+                if (minx > t2x)
+                    minx = t2x;
+
+                if (maxx < t1x)
+                    maxx = t1x;
+                if (maxx < t2x)
+                    maxx = t2x;
+
+                drawHLine(minx, y, maxx - minx, color);    // Draw line from min to max points found on the y
+                // Now increase y
+                if (!changed1)
+                    t1x += signx1;
+                t1x += t1xp;
+
+                if (!changed2)
+                    t2x += signx2;
+                t2x += t2xp;
+
+                y += 1;
+                if (y == y2)
+                    break;
+            }
+        }
+
+	// Second half
+	dx1 = x3 - x2;
+        if (dx1 < 0) {
+            dx1 = -dx1;
+            signx1 = -1;
+        } else
+            signx1 = 1;
+
+	dy1 = y3 - y2;
+	t1x = x2;
+        changed1 = dy1 > dx1;
+	if (changed1)
+            std::swap(dy1, dx1);
+
+	e1 = dx1 >> 1;
+
+	for (u32 i = 0; i <= dx1; i++) {
+            t1xp = 0;
+            t2xp = 0;
+            if (t1x < t2x) {
+                minx = t1x;
+                maxx = t2x;
+            } else {
+                minx = t2x;
+                maxx = t1x;
+            }
+
+	    // process first line until y value is about to change
+            while (i < dx1) {
+    		e1 += dy1;
+                if (e1 >= dx1) {
+                    e1 -= dx1;
+                    if (!changed1)
+                        break;
+                    t1xp = signx1;
+                }
+                if (changed1)
+                    break;
+                t1x += signx1;
+                i += i < dx1;
+            }
+
+            // process second line until y value is about to change
+            while (t2x != x3) {
+                e2 += dy2;
+                while (e2 >= dx2) {
+                    e2 -= dx2;
+                    if (!changed2)
+                        goto next4;
+                    t2xp = signx2;
+                }
+                if (changed2)
+                    break;
+                t2x += signx2;
+            }
+	next4:
+
+            if (minx > t1x)
+                minx = t1x;
+            if (minx > t2x)
+                minx = t2x;
+
+            if (maxx < t1x)
+                maxx = t1x;
+            if (maxx < t2x)
+                maxx = t2x;
+
+            drawHLine(minx, y, maxx - minx, color);    // Draw line from min to max points found on the y
+
+            // Now increase y
+            if (!changed1)
+                t1x += signx1;
+
+            t1x += t1xp;
+            if (!changed2)
+                t2x += signx2;
+            t2x += t2xp;
+            y += 1;
+            if (y > y3)
+                return;
+	}
     }
 
     type* ptr() {

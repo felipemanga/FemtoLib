@@ -27,17 +27,24 @@ struct Point2D {
         return point;
     }
 
-    void rotateXY(f32 rad){
+    Point2D& rotateXY(f32 rad){
         f32 cr  = cos(rad);
         f32 sr  = sin(rad);
         f32 x   = cr * this->x - sr * this->y;
         this->y = sr * this->x + cr * this->y;
         this->x = x;
+        return *this;
     }
 
     Point2D& operator *= (f32 scalar) {
         x *= scalar;
         y *= scalar;
+        return *this;
+    }
+
+    Point2D& operator += (f32 scalar) {
+        x += scalar;
+        y += scalar;
         return *this;
     }
 
