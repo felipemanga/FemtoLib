@@ -1,5 +1,6 @@
 #pragma once
 #include "Femto"
+#include "types.hpp"
 
 namespace Graphics {
     namespace _graphicsInternal {
@@ -74,10 +75,10 @@ namespace Graphics {
     }
 
     template <typename Integer,
-              std::enable_if_t<std::is_integral_v<Integer>, int> = 0
+              typename std::enable_if<std::is_integral<Integer>::value, int>::type = 0
               >
     inline void print(Integer number){
-        if (std::is_signed_v<Integer> && number < 0){
+        if (std::is_signed<Integer>::value && number < 0){
             print('-');
             number = -number;
         }
@@ -85,7 +86,7 @@ namespace Graphics {
     }
 
     template <typename Integer,
-              std::enable_if_t<std::is_integral_v<Integer>, int> = 0
+              typename std::enable_if<std::is_integral<Integer>::value, int>::type = 0
               >
     inline void printD(Integer number){
 #ifndef RELEASE
@@ -93,8 +94,26 @@ namespace Graphics {
 #endif
     }
 
+    inline void print(f32 number){
+        auto whole = s32(number);
+        print(whole);
+        print('.');
+        number -= whole;
+        auto fraction = f32ToS24q8(number);
+        if (!fraction) {
+            print('0');
+            return;
+        }
+        for (u32 i=0; i < 4 && fraction; ++i) {
+            fraction *= 10;
+            whole = floor(s24q8ToF32(fraction));
+            fraction -= whole;
+            print(whole);
+        }
+    }
+
     template <typename Pointer,
-              std::enable_if_t<std::is_pointer_v<Pointer>, int> = 0
+              typename std::enable_if<std::is_pointer<Pointer>::value, int>::type = 0
               >
     inline void print(Pointer ptr){
         auto v = reinterpret_cast<std::uintptr_t>(ptr);
@@ -116,14 +135,14 @@ namespace Graphics {
     }
 
     template <typename Enum,
-              std::enable_if_t<std::is_enum_v<Enum>, int> = 0
+              typename std::enable_if<std::is_enum<Enum>::value, int>::type = 0
               >
     inline void print(Enum e){
         print(static_cast<unsigned int>(e));
     }
 
     template <typename Enum,
-              std::enable_if_t<std::is_enum_v<Enum>, int> = 0
+              typename std::enable_if<std::is_enum<Enum>::value, int>::type = 0
               >
     inline void printD(Enum e){
 #ifndef RELEASE
@@ -145,7 +164,7 @@ namespace Graphics {
     template <
         typename Arg,
         typename ... Args,
-        std::enable_if_t<sizeof...(Args), int> = 0
+        typename std::enable_if<sizeof...(Args), int>::type = 0
         >
     void printD(const Arg& arg, const Args& ... args){
 #ifndef RELEASE

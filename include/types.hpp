@@ -65,7 +65,7 @@ class StringInfo {
             v2 = (v2 ^ c) * 16777619;
         }
         u32 v = v1 * 13 + v2;
-        return {view, v, view.end() - view.begin()};
+        return std::tuple<const std::string_view, u32, u32>{view, v, view.end() - view.begin()};
     }
 
 public:
@@ -102,7 +102,7 @@ constexpr void for_constexpr(Func&& f) {
 
 
 // https://stackoverflow.com/questions/35941045/can-i-obtain-c-type-names-in-a-constexpr-way
-
+/*
 template <typename T> constexpr std::string_view type_name();
 
 template <>
@@ -147,6 +147,7 @@ constexpr std::string_view type_name() {
     constexpr auto type_name_length = wrapped_name.length() - prefix_length - suffix_length;
     return wrapped_name.substr(prefix_length, type_name_length);
 }
+*/
 
 constexpr inline u32 nextPowerOfTwo(u32 v){
     v |= v >> 16;
