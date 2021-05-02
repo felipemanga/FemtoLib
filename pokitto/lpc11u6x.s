@@ -140,6 +140,9 @@
 .global _ZN8Graphics17_drawListInternal14pixelCopy8BPPAEPtPKhmPKtm
 .global _ZN8Graphics17_drawListInternal14pixelCopy8BPPSEPtPKhmPKt
 .global _ZN8Graphics17_drawListInternal15pixelCopy8BPPASEPtPKhmPKtm
+.global _ZN8Graphics17_drawListInternal15pixelCopy8BPP2XEPtPKhmPKt
+.global _ZN8Graphics17_drawListInternal16pixelCopy8BPPS2XEPtPKhmPKt
+.global _ZN8Graphics17_drawListInternal16pixelCopy8BPPA2XEPtPKhmPKtm
 
         // LCD output
 .func flushLine16
@@ -288,6 +291,39 @@ _ZN8Graphics17_drawListInternal13pixelCopy8BPPEPtPKhmPKt:
 .unreq PALETTE
 .unreq TMP
 
+.func _ZN8Graphics17_drawListInternal13pixelCopy8BPPEPtPKhmPKt
+_ZN8Graphics17_drawListInternal15pixelCopy8BPP2XEPtPKhmPKt:
+# void pixelCopy8BPP2X(u16* dest, u8* src, u32 count, u16* palette)
+        DEST .req r0
+        SRC  .req r1
+        COUNT .req r2
+        PALETTE .req r3
+        TMP .req r4
+        push {r4, lr}
+        adds SRC, COUNT
+        rsbs COUNT, 0
+        ldrb TMP, [SRC, COUNT]
+1:
+        cmp TMP, 0
+        beq 2f
+        lsls TMP, 1
+        ldrh TMP, [PALETTE, TMP]
+        strh TMP, [DEST]
+        strh TMP, [DEST, 2]
+2:
+        adds DEST, 4
+        adds COUNT, 1
+        ldrb TMP, [SRC, COUNT]
+        bne 1b
+        pop {r4, pc}
+.pool
+.endFunc
+.unreq DEST
+.unreq SRC
+.unreq COUNT
+.unreq PALETTE
+.unreq TMP
+
 .func _ZN8Graphics17_drawListInternal14pixelCopy8BPPAEPtPKhmPKtm
 _ZN8Graphics17_drawListInternal14pixelCopy8BPPAEPtPKhmPKtm:
 # void pixelCopy8BPPA(u16* dest, u8* src, u32 count, u16* palette, u32 alpha)
@@ -364,6 +400,104 @@ _ZN8Graphics17_drawListInternal14pixelCopy8BPPAEPtPKhmPKtm:
 .unreq ALPHA
 .unreq SHIFTOR
 
+.func _ZN8Graphics17_drawListInternal16pixelCopy8BPPA2XEPtPKhmPKtm
+_ZN8Graphics17_drawListInternal16pixelCopy8BPPA2XEPtPKhmPKtm:
+# void pixelCopy8BPPA2X(u16* dest, u8* src, u32 count, u16* palette, u32 alpha)
+        DEST .req r0
+        SRC  .req r1
+        COUNT .req r2
+        PALETTE .req r3
+        COLOR .req r10
+        TMP .req r4
+        TMP2 .req r5
+        MASK .req r6
+        TMP3 .req r7
+        ALPHA .req r8
+        SHIFTOR .req r9
+
+        push {r4-r7, lr}
+        mov r4, r8
+        mov r5, r9
+        mov r6, r10
+        push {r4-r6}
+        ldr  MASK, =0x07e0f81f
+
+        ldr  TMP, [SP, 4*8]
+        mov ALPHA, TMP
+
+        ldr TMP, =0x00010001
+        mov SHIFTOR, TMP
+
+        adds SRC, COUNT
+        rsbs COUNT, 0
+
+        ldrb TMP, [SRC, COUNT]
+1:
+        cmp TMP, 0
+        beq 2f
+        lsls TMP, 1
+        ldrh TMP, [PALETTE, TMP]
+
+        mov  TMP3, SHIFTOR
+        muls TMP, TMP3
+        ands TMP, MASK
+
+        ldrh TMP2, [DEST]
+        mov  COLOR, TMP
+        muls TMP2, TMP3
+        ands TMP2, MASK
+
+        subs TMP, TMP2
+        mov  TMP3, ALPHA
+        muls TMP, TMP3
+        lsrs TMP, 5
+        adds TMP2, TMP
+        ands TMP2, MASK
+        lsrs TMP, TMP2, 16
+        orrs TMP, TMP2
+
+        strh TMP, [DEST]
+
+        ldrh TMP2, [DEST, 2]
+        mov  TMP3, SHIFTOR
+        mov  TMP, COLOR
+        muls TMP2, TMP3
+        ands TMP2, MASK
+
+        subs TMP, TMP2
+        mov  TMP3, ALPHA
+        muls TMP, TMP3
+        lsrs TMP, 5
+        adds TMP2, TMP
+        ands TMP2, MASK
+        lsrs TMP, TMP2, 16
+        orrs TMP, TMP2
+        strh TMP, [DEST, 2]
+
+2:
+        adds DEST, 4
+        adds COUNT, 1
+        ldrb TMP, [SRC, COUNT]
+        bne 1b
+        pop {r4-r6}
+        mov r10, r6
+        mov r9, r5
+        mov r8, r4
+        pop {r4-r7, pc}
+.pool
+.endFunc
+.unreq COLOR
+.unreq DEST
+.unreq SRC
+.unreq COUNT
+.unreq PALETTE
+.unreq TMP
+.unreq TMP2
+.unreq MASK
+.unreq TMP3
+.unreq ALPHA
+.unreq SHIFTOR
+
         // ---- SOLID PIXEL COPY VARIANTS ----
 
 .func _ZN8Graphics17_drawListInternal14pixelCopy8BPPSEPtPKhmPKt
@@ -383,6 +517,36 @@ _ZN8Graphics17_drawListInternal14pixelCopy8BPPSEPtPKhmPKt:
         ldrh TMP, [PALETTE, TMP]
         strh TMP, [DEST]
         adds DEST, 2
+        adds COUNT, 1
+        ldrb TMP, [SRC, COUNT]
+        bne 1b
+        pop {r4, pc}
+.pool
+.endFunc
+.unreq DEST
+.unreq SRC
+.unreq COUNT
+.unreq PALETTE
+.unreq TMP
+
+.func _ZN8Graphics17_drawListInternal16pixelCopy8BPPS2XEPtPKhmPKt
+_ZN8Graphics17_drawListInternal16pixelCopy8BPPS2XEPtPKhmPKt:
+# void pixelCopy8BPP2X(u16* dest, u8* src, u32 count, u16* palette)
+        DEST .req r0
+        SRC  .req r1
+        COUNT .req r2
+        PALETTE .req r3
+        TMP .req r4
+        push {r4, lr}
+        adds SRC, COUNT
+        rsbs COUNT, 0
+        ldrb TMP, [SRC, COUNT]
+1:
+        lsls TMP, 1
+        ldrh TMP, [PALETTE, TMP]
+        strh TMP, [DEST]
+        strh TMP, [DEST, 2]
+        adds DEST, 4
         adds COUNT, 1
         ldrb TMP, [SRC, COUNT]
         bne 1b

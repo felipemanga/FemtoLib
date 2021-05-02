@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <iostream>
 #include <cstring>
 
 // C++ versions of ARM assembler MemOps - Jonne
