@@ -66,35 +66,70 @@ struct Point2D {
         return *this;
     }
 
-    Point2D operator + (f32 scalar) {
+    Point2D operator + (f32 scalar) const {
         Point2D c{*this};
         c.x += scalar;
         c.y += scalar;
         return c;
     }
 
-    Point2D operator + (const Point2D &other) {
+    Point2D operator + (s32 scalar) const {
+        Point2D c{*this};
+        c.x += scalar;
+        c.y += scalar;
+        return c;
+    }
+
+    Point2D operator + (u32 scalar) const {
+        Point2D c{*this};
+        c.x += scalar;
+        c.y += scalar;
+        return c;
+    }
+
+    Point2D operator + (const Point2D &other) const {
         Point2D c{*this};
         c.x += other.x;
         c.y += other.y;
         return c;
     }
 
-    Point2D operator * (const Point2D &other) {
+    Point2D operator * (const Point2D &other) const {
         Point2D c{*this};
         c.x *= other.x;
         c.y *= other.y;
         return c;
     }
 
-    Point2D operator * (f32 scalar) {
+    Point2D operator * (f32 scalar) const {
         Point2D c{*this};
         c.x *= scalar;
         c.y *= scalar;
         return c;
     }
 
-    Point2D operator - (const Point2D &other) {
+    Point2D operator - (f32 scalar) const {
+        Point2D c{*this};
+        c.x -= scalar;
+        c.y -= scalar;
+        return c;
+    }
+
+    Point2D operator - (s32 scalar) const {
+        Point2D c{*this};
+        c.x -= scalar;
+        c.y -= scalar;
+        return c;
+    }
+
+    Point2D operator - (u32 scalar) const {
+        Point2D c{*this};
+        c.x -= scalar;
+        c.y -= scalar;
+        return c;
+    }
+
+    Point2D operator - (const Point2D &other) const {
         Point2D c{*this};
         c.x -= other.x;
         c.y -= other.y;
