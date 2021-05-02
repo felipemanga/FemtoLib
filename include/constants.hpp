@@ -5,6 +5,8 @@
 
 #if defined(POKITTO_CLASSIC) || defined(POK_SIM)
 #define LCD_ST7775
+#elif defined(ESPBOY)
+#define LCD_ST7735
 #endif
 
 #if defined(TARGET_LPC11U6X) && defined(LCD_ST7775)
@@ -15,12 +17,18 @@
 #define SCREEN_WIDTH 220
 #define SCREEN_HEIGHT 176
 #define SCREEN_565
-// #elif defined(TARGET_3DS)
+#endif
+
+// #if defined(TARGET_3DS)
 // #define SCREEN_WIDTH 400
 // #define SCREEN_HEIGHT 240
 // #define SCREEN_565
-#endif
 
+#if defined(LCD_ST7735)
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 128
+#define SCREEN_565
+#endif
 
 #ifdef TARGET_SDL
 #include <SDL2/SDL.h>
