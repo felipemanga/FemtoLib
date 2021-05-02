@@ -61,7 +61,7 @@ public:
             return (*reinterpret_cast<Class*>(data))(std::forward<decltype(args)>(args)...);
         }} {}
 
-    template <typename Class, std::enable_if_t<!std::is_pointer<Class>::value, int> = 0>
+    template <typename Class, typename std::enable_if<!std::is_pointer<Class>::value, int>::type = 0>
     constexpr Function(const Class& obj) : Function(&obj) {}
 
     template <typename ... Args>

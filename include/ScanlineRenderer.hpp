@@ -103,7 +103,7 @@ namespace Graphics {
             Graphics::layer::SolidColor<bgColor>,
             Graphics::layer::DrawList<spriteCount, font>
             >;
-        static __attribute__((align(alignof(Type)))) u8 defaultGfx[sizeof(Type)];
+        static ALIGN(Type) u8 defaultGfx[sizeof(Type)];
         new (defaultGfx) Type();
     }
 }

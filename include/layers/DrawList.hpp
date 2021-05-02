@@ -49,7 +49,7 @@ namespace Graphics {
             bitmap = bitmap + 4 + index * (w * hbytes + 1);
             uint32_t numBytes = *bitmap++; //first byte of char is the width in bytes
 
-            if(u32(textY) >= screenHeight || textY + h*scale < 0 || u32(textX) >= screenWidth || textX + w*scale < 0) {
+            if(u32(textY) >= screenHeight || s32(textY + h*scale) < 0 || u32(textX) >= screenWidth || textX + w*scale < 0) {
                 textX += numBytes * scale + charPadding;
                 return;
             }
@@ -191,12 +191,15 @@ namespace Graphics {
 // #endif
         }
 
-        template <u32 bits, bool isTransparent>
+        template <u32 bits, bool isTransparent, bool scale2x = false>
         inline void blitXBPP(u16 *line, Cmd &s, u32 y){
             extern void pixelCopy8BPPA(u16*, const u8 *, u32, const u16 *, u32);
+            extern void pixelCopy8BPPA2X(u16*, const u8 *, u32, const u16 *, u32);
             extern void pixelCopy8BPPAS(u16*, const u8 *, u32, const u16 *, u32);
             extern void pixelCopy8BPP(u16*, const u8 *, u32, const u16 *);
+            extern void pixelCopy8BPP2X(u16*, const u8 *, u32, const u16 *);
             extern void pixelCopy8BPPS(u16*, const u8 *, u32, const u16 *);
+            extern void pixelCopy8BPPS2X(u16*, const u8 *, u32, const u16 *);
             extern void pixelCopy4BPPA(u16*, const u8 *, u32, const u16 *, u32);
             extern void pixelCopy4BPPAS(u16*, const u8 *, u32, const u16 *, u32);
             extern void pixelCopy4BPP(u16*, const u8 *, u32, const u16 *);
@@ -206,43 +209,64 @@ namespace Graphics {
             extern void pixelCopy2BPP(u16*, const u8 *, u32, const u16 *);
             extern void pixelCopy2BPPS(u16*, const u8 *, u32, const u16 *);
 
+            y >>= scale2x; // (y + scale2x) >> scale2x;
+
             auto data = static_cast<const u8*>(s.data);
             int w = s.width;
             const uint8_t *src = data + y * (w / (8 / bits));
             s32 sx = s.x;
 
             if (sx < 0) {
-                src -= sx;
-                w += sx;
+                src -= sx >> scale2x;
+                w += sx >> scale2x;
                 sx = 0;
             } else if(s.x > 0) {
                 line += s.x;
             }
-            if (u32(sx + w) >= screenWidth) {
-                w = screenWidth - sx;
+
+            if (u32(sx + (w << scale2x)) >= screenWidth) {
+                w = ((screenWidth - sx) + scale2x) >> scale2x;
             }
 
             auto palette = reinterpret_cast<const u16 *>(s.udata);
             u32 alpha = s.b1;
             if (alpha != ((0xFF + 4) >> 3)) {
-                if (isTransparent) {
-                    if (bits == 8) pixelCopy8BPPA(line, src, w, palette, alpha);
-                    if (bits == 4) pixelCopy4BPPA(line, src, w, palette, alpha);
-                    if (bits == 2) pixelCopy2BPPA(line, src, w, palette, alpha);
+                if (scale2x) {
+                    if (isTransparent) {
+                        if (bits == 8) pixelCopy8BPPA2X(line, src, w, palette, alpha);
+                    } else {
+                        if (bits == 8) pixelCopy8BPPAS(line, src, w, palette, alpha);
+                    }
                 } else {
-                    if (bits == 8) pixelCopy8BPPAS(line, src, w, palette, alpha);
-                    if (bits == 4) pixelCopy4BPPAS(line, src, w, palette, alpha);
-                    if (bits == 2) pixelCopy2BPPAS(line, src, w, palette, alpha);
+                    if (isTransparent) {
+                        if (bits == 8) pixelCopy8BPPA(line, src, w, palette, alpha);
+                        if (bits == 4) pixelCopy4BPPA(line, src, w, palette, alpha);
+                        if (bits == 2) pixelCopy2BPPA(line, src, w, palette, alpha);
+                    } else {
+                        if (bits == 8) pixelCopy8BPPAS(line, src, w, palette, alpha);
+                        if (bits == 4) pixelCopy4BPPAS(line, src, w, palette, alpha);
+                        if (bits == 2) pixelCopy2BPPAS(line, src, w, palette, alpha);
+                    }
                 }
             } else {
-                if (isTransparent) {
-                    if (bits == 8) pixelCopy8BPP(line, src, w, palette);
-                    if (bits == 4) pixelCopy4BPP(line, src, w, palette);
-                    if (bits == 2) pixelCopy2BPP(line, src, w, palette);
+                if (scale2x) {
+                    if (isTransparent) {
+                        if (bits == 8) pixelCopy8BPP2X(line, src, w, palette);
+                    } else {
+                        if (bits == 8) pixelCopy8BPPS2X(line, src, w, palette);
+                        // if (bits == 4) pixelCopy4BPPS(line, src, w, palette);
+                        // if (bits == 2) pixelCopy2BPPS(line, src, w, palette);
+                    }
                 } else {
-                    if (bits == 8) pixelCopy8BPPS(line, src, w, palette);
-                    if (bits == 4) pixelCopy4BPPS(line, src, w, palette);
-                    if (bits == 2) pixelCopy2BPPS(line, src, w, palette);
+                    if (isTransparent) {
+                        if (bits == 8) pixelCopy8BPP(line, src, w, palette);
+                        if (bits == 4) pixelCopy4BPP(line, src, w, palette);
+                        if (bits == 2) pixelCopy2BPP(line, src, w, palette);
+                    } else if (!scale2x) {
+                        if (bits == 8) pixelCopy8BPPS(line, src, w, palette);
+                        if (bits == 4) pixelCopy4BPPS(line, src, w, palette);
+                        if (bits == 2) pixelCopy2BPPS(line, src, w, palette);
+                    }
                 }
             }
         }
@@ -479,7 +503,7 @@ namespace Graphics {
 
             DrawList(){
                 bind();
-                if (_font) {
+                if (_font != nullptr) {
                     bindText();
                 }
             }
@@ -529,7 +553,7 @@ namespace Graphics {
                 for(u32 i = _begin, j = 0; j != _size; ++i, ++j){
                     if (i >= capacity) i = 0;
                     auto& s = cmdBuffer[i];
-                    if( s.y > y ) continue;
+                    if( s.y > s32(y) ) continue;
 
                     u32 smaxY = s.maxY;
                     if( smaxY <= y ){
@@ -773,13 +797,14 @@ namespace Graphics {
     }
 
     template <bool transparent = true,
+              bool scale2x = false,
               u32 bits = 0,
-              std::enable_if_t<isPowerOfTwo(bits), int> = 1>
+              typename std::enable_if<isPowerOfTwo(bits), int>::type = 1>
     inline void draw(const BitmapFrame<bits>& bitmap, s32 x = 0, s32 y = 0, f32 falpha = 1){
         using namespace _drawListInternal;
 
-        if (s32(x + bitmap.width()) <= 0 || x >= s32(screenWidth)) return;
-        if (s32(y + bitmap.height()) <= 0 || y >= s32(screenHeight)) return;
+        if (s32(x + (bitmap.width() << scale2x)) <= scale2x || x >= s32(screenWidth)) return;
+        if (s32(y + (bitmap.height() << scale2x)) <= 0 || y >= s32(screenHeight)) return;
 
         u8 alpha = round(falpha * 255);
         alpha = (u32(alpha) + 4) >> 3;
@@ -793,7 +818,7 @@ namespace Graphics {
                 udata = (udata | udata << 16) & 0x07e0f81f;
             }
         } else {
-            f = blitXBPP<bits, transparent>;
+            f = blitXBPP<bits, transparent, scale2x>;
         }
 
         Cmd cmd{
@@ -801,7 +826,7 @@ namespace Graphics {
             .draw = f,
             .x = decl_cast(Cmd::x, x),
             .y = decl_cast(Cmd::y, y),
-            .maxY = decl_cast(Cmd::maxY, bitmap.height()),
+            .maxY = decl_cast(Cmd::maxY, bitmap.height() << scale2x),
             .width = decl_cast(Cmd::width, bitmap.width()),
             .b1 = decl_cast(Cmd::b1, alpha)
         };
@@ -809,15 +834,15 @@ namespace Graphics {
         add(cmd);
     }
 
-    template <bool transparent = true, typename BitmapLike = BitmapFrame<0>>
+    template <bool transparent = true, bool scale2x = false, typename BitmapLike = BitmapFrame<0>>
     inline void draw(const BitmapLike &data, Point2D topLeft, f32 falpha = 1){
         topLeft -= camera;
-        draw<transparent, BitmapLike::bitsPerPixel, true>(data, round(topLeft.x), round(topLeft.y), falpha);
+        draw<transparent, scale2x, BitmapLike::bitsPerPixel, true>(data, round(topLeft.x), round(topLeft.y), falpha);
     }
 
-    template <bool transparent = true, typename BitmapLike = BitmapFrame<0>>
+    template <bool transparent = true, bool scale2x = false, typename BitmapLike = BitmapFrame<0>>
     inline void draw(const BitmapLike &data, s32 x, s32 y, f32 falpha = 1){
-        draw<transparent, BitmapLike::bitsPerPixel, true>(data, x, y, falpha);
+        draw<transparent, scale2x, BitmapLike::bitsPerPixel, true>(data, x, y, falpha);
     }
 
     inline void clear(){

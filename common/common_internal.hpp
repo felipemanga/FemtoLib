@@ -45,6 +45,14 @@ WEAK void pixelCopy8BPP(u16 *dest, const u8 *src, u32 count, const u16 *palette)
     }
 }
 
+WEAK void pixelCopy8BPP2X(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
+    while(count--){
+        if(u32 c = *src++)
+            dest[0] = dest[1] = palette[c];
+        dest += 2;
+    }
+}
+
 WEAK void pixelCopy8BPPA(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha) {
     while(count--){
         if(u32 color = *src++){
@@ -60,9 +68,37 @@ WEAK void pixelCopy8BPPA(u16 *dest, const u8 *src, u32 count, const u16 *palette
     }
 }
 
+WEAK void pixelCopy8BPPA2X(u16 *dest, const u8 *src, u32 count, const u16 *palette, u32 alpha) {
+    while(count--){
+        if(u32 color = *src++){
+            color = palette[color];
+            color = (color * 0x00010001) & 0x07e0f81f;
+            u32 bg = dest[0];
+            bg = (bg * 0x00010001) & 0x07e0f81f;
+            bg += (color - bg) * alpha >> 5;
+            bg &= 0x07e0f81f;
+            dest[0] = (bg | bg >> 16);
+
+            bg = dest[1];
+            bg = (bg * 0x00010001) & 0x07e0f81f;
+            bg += (color - bg) * alpha >> 5;
+            bg &= 0x07e0f81f;
+            dest[1] = (bg | bg >> 16);
+        }
+        dest += 2;
+    }
+}
+
 WEAK void pixelCopy8BPPS(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
     while(count--){
         *dest++ = palette[*src++];
+    }
+}
+
+WEAK void pixelCopy8BPPS2X(u16 *dest, const u8 *src, u32 count, const u16 *palette) {
+    while(count--){
+        dest[0] = dest[1] = palette[*src++];
+        dest++;
     }
 }
 
@@ -109,7 +145,9 @@ WEAK void pixelCopy2BPPAS(u16 *dest, const u8 *src, u32 count, const u16 *palett
 
 }
 
+#ifndef TARGET_ESP8266
 WEAK void init() {
+    printf("Default Init\n"); fflush(stdout);
     Graphics::palette = Graphics::generalPalette;
     Graphics::init();
     Audio::init();
@@ -117,6 +155,10 @@ WEAK void init() {
 }
 
 WEAK void update() {}
+#else
+void init();
+void update();
+#endif
 
 void (*updateHandler)() = +[](){};
 void (*updateDisplay)() = +[](){};

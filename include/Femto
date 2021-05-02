@@ -5,6 +5,12 @@
 #endif
 
 #define WEAK          __attribute__ ((weak))
+#ifndef __clang__
+#define ALIGN(TYPE)   __attribute__((align(alignof(TYPE))))
+#else
+#define ALIGN(TYPE)
+#endif
+#define ARRAY_LENGTH(ARRAY) (sizeof(ARRAY) / sizeof(ARRAY[0]))
 
 #include "../libs/File/File"
 #include "../libs/LibAudio/LibAudio"
