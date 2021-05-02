@@ -101,8 +101,12 @@ namespace Audio {
 
 #if defined(TARGET_LPC11U6X)
 #include "./PokittoHWSink.hpp"
-#else
+#elif defined(TARGET_SDL1) || defined(TARGET_SDL2)
 #include "./PokittoSimSink.hpp"
+#elif defined(TARGET_ESPBOY)
+#include "./ESPBoyHWSink.hpp"
+#else
+#include "./NOPSink.hpp"
 #endif
 
 #include "./SilenceSource.hpp"
