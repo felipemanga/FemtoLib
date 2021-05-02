@@ -3,6 +3,6 @@
 
 namespace Graphics::layer {
     inline LineFiller NOP(){
-        return {0, +[](u16*, u32, uptr){}};
+        return {0, +[](uptr, u32, u16*){}};
     }
 }
