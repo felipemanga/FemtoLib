@@ -7,10 +7,16 @@ namespace Audio {
 
         static void copy(u8 *buffer, void *ptr){
             auto& state = *reinterpret_cast<SFX8VolumeSource*>(ptr);
-            u32 len = std::min<u32>(512, state.len);
-            u32 i=0;
-            for(i=0; i<len; ++i)
-                buffer[i] = (state.volume*(s32(state.head[i]) - 128) >> 8) + 128;
+            u32 len = std::min<u32>(512, state.len * state.slowdown);
+            u32 i=0, j=0, r=state.slowdown;
+            for(i=0; i<len; ++i){
+                s32 sample = state.head[j];
+                if (!--r) {
+                    r = state.slowdown;
+                    j++;
+                }
+                buffer[i] = (state.volume*(sample - 128) >> 8) + 128;
+            }
             for(; i<512; ++i)
                 buffer[i] = 128;
             state.head += len;
@@ -20,10 +26,14 @@ namespace Audio {
         static void mix(u8 *buffer, void *ptr){
             auto& state = *reinterpret_cast<SFX8VolumeSource*>(ptr);
             u32 len = std::min<u32>(512, state.len);
-            u32 i=0;
+            u32 i=0, j=0, r=state.slowdown;
             for(i=0; i<len; ++i){
-                s32 s = (state.volume*(s32(state.head[i]) - 127) >> 8) + 127;
-                buffer[i] = Audio::mix(buffer[i], s);
+                s32 sample = state.head[j];
+                if (!--r) {
+                    r = state.slowdown;
+                    j++;
+                }
+                buffer[i] = Audio::mix(buffer[i], (state.volume*(sample - 128) >> 8) + 128);
             }
 
             state.head += len;
@@ -31,6 +41,7 @@ namespace Audio {
         }
 
     public:
+        u8 slowdown;
         u8 volume;
 
         template<u32 channel = 1>
@@ -38,6 +49,8 @@ namespace Audio {
             static SFX8VolumeSource state;
             state.len = len;
             state.head = data;
+            state.volume = 255;
+            state.slowdown = 1;
             connect(channel, &state, channel == 0 ? copy : mix);
             return state;
         }
@@ -49,9 +62,10 @@ namespace Audio {
     };
 
     template<u32 channel = 1, u32 len = 0>
-    inline SFX8VolumeSource& play(const u8 (&data)[len], u8 volume){
+    inline SFX8VolumeSource& play(const u8 (&data)[len], u8 volume, u8 slowdown = 1){
         auto& src = SFX8VolumeSource::play<channel>(data, len);
         src.volume = volume;
+        src.slowdown = slowdown;
         return src;
     }
 }

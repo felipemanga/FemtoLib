@@ -116,13 +116,14 @@ public:
 
             auto bitmap = font + 4 + index * (fontWidth * hbytes + 1);
             u32 gliphWidth = *bitmap++;
+            u32 offsetX = fontWidth/2 - gliphWidth/2;
             for(u32 localX = 0; localX < gliphWidth; ++localX, ++line){
                 u32 bitcolumn = *bitmap++;
                 if(isTall){
                     bitcolumn |= (*bitmap++) << 8;
                 }
                 if ((bitcolumn >> shift) & 1) {
-                    *line = primaryColor;
+                    line[offsetX] = primaryColor;
                 }
             }
             line += fontWidth - gliphWidth;

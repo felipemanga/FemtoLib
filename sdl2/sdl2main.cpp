@@ -4,6 +4,10 @@
 #include <emscripten.h>
 #endif
 
+#ifndef PIXEL_SIZE
+#define PIXEL_SIZE 1
+#endif
+
 template<Button button> bool buttonState;
 SDL_AudioDeviceID audioDevice;
 static s32 scanlineY;
@@ -106,18 +110,22 @@ static void* updateEvents(bool isFrame) {
                 buttonState<Button::C> = isDown;
                 break;
 
+            case SDLK_i:
             case SDLK_UP:
                 buttonState<Button::Up> = isDown;
                 break;
 
+            case SDLK_k:
             case SDLK_DOWN:
                 buttonState<Button::Down> = isDown;
                 break;
 
+            case SDLK_j:
             case SDLK_LEFT:
                 buttonState<Button::Left> = isDown;
                 break;
 
+            case SDLK_l:
             case SDLK_RIGHT:
                 buttonState<Button::Right> = isDown;
                 break;
@@ -146,6 +154,7 @@ extern "C" void flushLine16(u16 *line) {
 }
 
 void delay(u32 milli) {
+    #ifndef __EMSCRIPTEN__
     u32 micro = milli * 1000;
     u32 start = getTimeMicro();
     while((getTimeMicro() - start) < micro) {
@@ -153,6 +162,7 @@ void delay(u32 milli) {
         SDL_Delay(15);
     }
     redraw();
+    #endif
 }
 
 int main(){
@@ -163,7 +173,7 @@ int main(){
 
     window = SDL_CreateWindow(
         PROJECT_NAME,
-        0, 0, screenWidth, screenHeight,
+        0, 0, screenWidth * PIXEL_SIZE, screenHeight * PIXEL_SIZE,
         SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (!window) {
@@ -171,7 +181,7 @@ int main(){
         return -2;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, /* SDL_RENDERER_PRESENTVSYNC | */ SDL_RENDERER_SOFTWARE);
+    renderer = SDL_CreateRenderer(window, -1, /**/ SDL_RENDERER_PRESENTVSYNC | /**/ SDL_RENDERER_SOFTWARE);
 
     screen = SDL_GetWindowSurface( window );
     vscreen = SDL_CreateRGBSurface(

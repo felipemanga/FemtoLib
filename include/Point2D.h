@@ -9,6 +9,12 @@ struct Point2D {
         this->y = y;
     }
 
+    bool distanceCheck(f32 range) {
+        if (std::max(abs(f32ToS24q8(x)), abs(f32ToS24q8(y))) > f32ToS24q8(range))
+            return false;
+        return lengthSquared() < range * range;
+    }
+
     f32 lengthSquared() {
         return x * x + y * y;
     }
@@ -105,6 +111,20 @@ struct Point2D {
         Point2D c{*this};
         c.x *= scalar;
         c.y *= scalar;
+        return c;
+    }
+
+    Point2D operator / (f32 scalar) const {
+        Point2D c{*this};
+        c.x /= scalar;
+        c.y /= scalar;
+        return c;
+    }
+
+    Point2D operator / (const Point2D &other) const {
+        Point2D c{*this};
+        c.x /= other.x;
+        c.y /= other.y;
         return c;
     }
 

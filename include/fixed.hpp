@@ -6,6 +6,7 @@
 using f32 = FixedPoints::SFixed<23, 8>;
 
 inline constexpr f32 PI = FixedPoints::Pi<f32>;
+inline constexpr f32 TAU = FixedPoints::Tau<f32>;
 
 inline constexpr s32 f32ToS24q8(f32 f){
     return f.getInternal();
@@ -47,6 +48,9 @@ inline constexpr s32 ceil(f32 v){
 namespace std {
     inline constexpr f32 abs(f32 v) {
         return v < 0 ? -v : v;
+    }
+    inline constexpr f32 fmod(f32 v, f32 d) {
+        return s24q8ToF32(f32ToS24q8(v) % f32ToS24q8(d));
     }
 }
 

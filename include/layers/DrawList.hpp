@@ -32,15 +32,17 @@ namespace Graphics {
 
         inline void _print(c8 index) {
             if (!font) return;
-
             const u8* bitmap = font;
             u8 w = *bitmap;
             u8 h = *(bitmap + 1);
             u32 scale = (doubleFontSize ? 2 : 1);
+            bool isNewLine = index == '\n';
+            bool isWhitespace = index <= ' ';
             index -= font[2];
-            if (u32(textX) > screenWidth) {
+            if (isNewLine || u32(textX) > screenWidth) {
                 textX = 0;
                 textY += h * scale + linePadding;
+                return;
             }
 
             uint8_t hbytes = ((h>>3) + ((h != 8) && (h != 16)));
@@ -49,7 +51,7 @@ namespace Graphics {
             bitmap = bitmap + 4 + index * (w * hbytes + 1);
             uint32_t numBytes = *bitmap++; //first byte of char is the width in bytes
 
-            if(u32(textY) >= screenHeight || s32(textY + h*scale) < 0 || u32(textX) >= screenWidth || textX + w*scale < 0) {
+            if(u32(textY) >= screenHeight || s32(textY + h*scale) < 0 || u32(textX) >= screenWidth || textX + w*scale < 0 || isWhitespace) {
                 textX += numBytes * scale + charPadding;
                 return;
             }
@@ -482,6 +484,7 @@ namespace Graphics {
                 if(_end >= capacity) _end = 0;
                 _size++;
                 if (_size > capacity) {
+                    LOG("DrawList<", _capacity, "> overflow\n");
                     _begin++;
                     _size--;
                     if (_begin >= capacity) {
@@ -597,6 +600,7 @@ namespace Graphics {
                 if(_end >= capacity) _end = 0;
                 _size++;
                 if (_size > capacity) {
+                    LOG("FastDrawList<", _capacity, "> overflow\n");
                     _begin++;
                     _size--;
                     if (_begin >= capacity) {
@@ -806,7 +810,7 @@ namespace Graphics {
         if (s32(x + (bitmap.width() << scale2x)) <= scale2x || x >= s32(screenWidth)) return;
         if (s32(y + (bitmap.height() << scale2x)) <= 0 || y >= s32(screenHeight)) return;
 
-        u8 alpha = round(falpha * 255);
+        u8 alpha = std::max(0, std::min(255, (int) round(falpha * 255)));
         alpha = (u32(alpha) + 4) >> 3;
         auto f = +[](u16 *line, Cmd &s, u32 y){};
         auto udata = reinterpret_cast<uptr>(palette);

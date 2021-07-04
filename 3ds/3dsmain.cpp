@@ -146,7 +146,7 @@ int main(){
         joysticks[i] = SDL_JoystickOpen(i);
     }
 
-    screen = SDL_SetVideoMode(screenWidth, screenHeight, 16, SDL_SWSURFACE|/*SDL_TOPSCR/*/SDL_DUALSCR/**/|SDL_FITHEIGHT); // SDL_HWSURFACE);
+    screen = SDL_SetVideoMode(screenWidth, screenHeight, 16, SDL_SWSURFACE|/* */SDL_TOPSCR/*/SDL_DUALSCR/**/|SDL_FITHEIGHT); // SDL_HWSURFACE);
 
     if (!screen) {
         LOG("No window surface\n");
