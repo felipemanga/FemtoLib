@@ -19,7 +19,9 @@ static void showMenu(){
     u32 oldopts = ~u32{};
 
     bool ignoreC = true;
-    menu.openRO("data/menu.i16");
+    if (!menu.openRO("data/menu.i16")) {
+        return;
+    }
     while(true){
         opts = 0;
         if (volume && Audio::internal::sinkInstance) opts |= 1 << 0;

@@ -804,11 +804,11 @@ namespace Graphics {
               bool scale2x = false,
               u32 bits = 0,
               typename std::enable_if<isPowerOfTwo(bits), int>::type = 1>
-    inline void draw(const BitmapFrame<bits>& bitmap, s32 x = 0, s32 y = 0, f32 falpha = 1){
+    inline bool draw(const BitmapFrame<bits>& bitmap, s32 x = 0, s32 y = 0, f32 falpha = 1){
         using namespace _drawListInternal;
 
-        if (s32(x + (bitmap.width() << scale2x)) <= scale2x || x >= s32(screenWidth)) return;
-        if (s32(y + (bitmap.height() << scale2x)) <= 0 || y >= s32(screenHeight)) return;
+        if (s32(x + (bitmap.width() << scale2x)) <= scale2x || x >= s32(screenWidth)) return false;
+        if (s32(y + (bitmap.height() << scale2x)) <= 0 || y >= s32(screenHeight)) return false;
 
         u8 alpha = std::max(0, std::min(255, (int) round(falpha * 255)));
         alpha = (u32(alpha) + 4) >> 3;
@@ -836,17 +836,18 @@ namespace Graphics {
         };
         cmd.udata = udata;
         add(cmd);
+        return true;
     }
 
     template <bool transparent = true, bool scale2x = false, typename BitmapLike = BitmapFrame<0>>
-    inline void draw(const BitmapLike &data, Point2D topLeft, f32 falpha = 1){
+    inline bool draw(const BitmapLike &data, Point2D topLeft, f32 falpha = 1){
         topLeft -= camera;
-        draw<transparent, scale2x, BitmapLike::bitsPerPixel, true>(data, round(topLeft.x), round(topLeft.y), falpha);
+        return draw<transparent, scale2x, BitmapLike::bitsPerPixel, true>(data, round(topLeft.x), round(topLeft.y), falpha);
     }
 
     template <bool transparent = true, bool scale2x = false, typename BitmapLike = BitmapFrame<0>>
-    inline void draw(const BitmapLike &data, s32 x, s32 y, f32 falpha = 1){
-        draw<transparent, scale2x, BitmapLike::bitsPerPixel, true>(data, x, y, falpha);
+    inline bool draw(const BitmapLike &data, s32 x, s32 y, f32 falpha = 1){
+        return draw<transparent, scale2x, BitmapLike::bitsPerPixel, true>(data, x, y, falpha);
     }
 
     inline void clear(){

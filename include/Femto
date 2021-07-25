@@ -50,3 +50,4 @@ void setBacklight(f32 brightness);
 void setMaxFPS(u32 fps);
 void delay(u32 milli);
 bool isPressed(Button button);
+void streamI16(File &file, u32 frameWidth = screenWidth, u32 frameHeight = screenHeight, u32 fillColor = 0);

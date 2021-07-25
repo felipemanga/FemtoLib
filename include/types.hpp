@@ -174,99 +174,6 @@ constexpr inline u32 countTrailingZeros(u32 v){
     return i;
 }
 
-// template <typename Type>
-// using DataReferenceType = typename std::conditional<
-//     std::is_pointer_v<Type>,
-//     Type,
-//     typename std::conditional<
-//         std::is_array_v<Type>,
-//         std::remove_all_extents_t<Type>*,
-//         Type&
-//         >::type
-//     >::type;
-
-// template <typename DataType, typename LUTType>
-// class LUT {
-// public:
-//     DataType data;
-//     LUTType lut;
-
-//     template <typename _DataType, typename _LUTType>
-//     constexpr LUT(const _DataType &data, const _LUTType &lut) :
-//         data(data),
-//         lut(lut) {}
-
-//     template <typename _DataType, typename _LUTType>
-//     constexpr LUT(_DataType &&data, _LUTType &&lut) :
-//         data(std::move(data)),
-//         lut(std::move(lut)) {}
-
-//     constexpr auto operator [] (u32 index) const {
-//         return lut[data[index]];
-//     }
-// };
-
-// template <typename DataType, typename LUTType>
-// LUT(const DataType&, const LUTType&) -> LUT<
-//     DataReferenceType<const DataType>,
-//     DataReferenceType<const LUTType>
-//     >;
-
-// template <typename DataType, typename LUTType>
-// class PageLUT {
-// public:
-//     DataType data;
-//     LUTType lut;
-//     u32 pageSize;
-
-//     template <typename _DataType, typename _LUTType>
-//     constexpr PageLUT(const _DataType &data, const _LUTType &lut, u32 pageSize) :
-//         data(data),
-//         lut(lut),
-//         pageSize(pageSize) {}
-
-//     template <typename _DataType, typename _LUTType>
-//     constexpr PageLUT(_DataType &&data, _LUTType &&lut, u32 pageSize) :
-//         data(std::move(data)),
-//         lut(std::move(lut)),
-//         pageSize(pageSize) {}
-
-//     constexpr auto operator [] (u32 index) const {
-//         return lut + data[index] * pageSize;
-//     }
-// };
-
-// template <typename DataType, typename LUTType>
-// PageLUT(const DataType&, const LUTType&, u32) -> PageLUT<
-//     DataReferenceType<const DataType>,
-//     DataReferenceType<const LUTType>
-//     >;
-
-// template <typename Type>
-// class Data2D {
-// public:
-//     Type data;
-//     u32 width;
-//     u32 height;
-
-//     auto operator [] (u32 index) const {
-//         return data[index];
-//     }
-
-//     auto get(u32 x, u32 y) const {
-//         x %= width; y %= height;
-//         return data[y * width + x];
-//     }
-// };
-
-// template <typename Type>
-// Data2D(const Type& data, u32, u32) -> Data2D<
-//     DataReferenceType<const Type>
-//     >;
-
-// template <typename Type>
-// Data2D(Type&& data, u32, u32) -> Data2D<Type>;
-
 #ifndef NO_FLOAT
 
 #include <math.h>
@@ -282,6 +189,7 @@ inline constexpr f32 s24q8ToF32(s32 s){
 }
 
 inline constexpr f32 PI = 3.1415926535897932384626433832795028841971f;
+inline constexpr f32 TAU = 3.1415926535897932384626433832795028841971f * 2.0f;
 
 inline constexpr f32 toRadians(f32 deg){
     return deg * PI / 180.0f;
@@ -292,6 +200,23 @@ inline constexpr f32 toRadians(f32 deg){
 #include "fixed.hpp"
 
 #endif
+
+f32 inline angleDelta(f32 a1, f32 a2) {
+    // while (a1 > 2*PI) a1 -= 2*PI;
+    // while (a1 < 0) a1 += 2*PI;
+    // while (a2 > 2*PI) a2 -= 2*PI;
+    // while (a2 < 0) a2 += 2*PI;
+
+    f32 a = a1 - a2;
+    f32 b = a2 - a1;
+
+    while (a > 2*PI) a -= TAU;
+    while (a < 0) a += TAU;
+    while (b > TAU) b -= TAU;
+    while (b < 0) b += TAU;
+
+    return a < b ? -a : b;
+}
 
 #include "Point2D.h"
 #include "Point3D.h"

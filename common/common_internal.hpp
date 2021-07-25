@@ -172,7 +172,7 @@ void setMaxFPS(u32 fps) {
     frameRate = fps;
 }
 
-void streamI16(File &file, u32 frameWidth = screenWidth, u32 frameHeight = screenHeight, u32 fillColor = 0) {
+void streamI16(File &file, u32 frameWidth, u32 frameHeight, u32 fillColor) {
     u16 line[screenWidth];
     s32 y = screenHeight/2 - frameHeight/2, max = frameHeight;
     s32 x = screenWidth/2 - frameWidth/2;

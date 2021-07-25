@@ -30,19 +30,17 @@ namespace Graphics {
         const u32 fillerCount;
 
         template<u32 count>
-        DynamicRenderer(std::array<LineFiller, count> &fillers) : fillers{fillers.data()}, fillerCount(count) { bind(); }
+        DynamicRenderer(std::array<LineFiller, count> &fillers) : fillers{fillers.data()}, fillerCount(count) { attach(); }
 
         template<u32 count>
-        DynamicRenderer(LineFiller (&fillers)[count]) : fillers{fillers}, fillerCount(count) { bind(); }
+        DynamicRenderer(LineFiller (&fillers)[count]) : fillers{fillers}, fillerCount(count) { attach(); }
 
-        DynamicRenderer(LineFiller *fillers, u32 count) : fillers{fillers}, fillerCount(count) { bind(); }
+        DynamicRenderer(LineFiller *fillers, u32 count) : fillers{fillers}, fillerCount(count) { attach(); }
 
         ~DynamicRenderer(){
             if (_graphicsInternal::instance == this) {
                 _graphicsInternal::instance = nullptr;
-                if (updateDisplay == update) {
-                    updateDisplay = +[](){};
-                }
+                detach();
             }
         }
 
@@ -51,9 +49,15 @@ namespace Graphics {
             _graphicsInternal::update(instance.fillers, instance.fillerCount);
         };
 
-        void bind() {
+        void attach() {
             _graphicsInternal::instance = this;
             updateDisplay = update;
+        }
+
+        void detach() {
+            if (updateDisplay == update) {
+                updateDisplay = +[](){};
+            }
         }
     };
 
@@ -63,6 +67,9 @@ namespace Graphics {
         LineFiller fillers[sizeof...(Args)];
 
     public:
+        using DynamicRenderer::detach;
+        using DynamicRenderer::attach;
+
         Renderer() :
             DynamicRenderer(fillers),
             fillers{std::get<Args>(args)...} {}

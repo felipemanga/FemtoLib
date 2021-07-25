@@ -161,8 +161,8 @@ void delay(u32 milli) {
         Schedule::runUpdateHooks(false, getTime());
         SDL_Delay(15);
     }
-    redraw();
     #endif
+    redraw();
 }
 
 int main(){
