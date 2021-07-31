@@ -214,12 +214,12 @@ static u32 prevFrame = 0;
 static u32 frameCount = 0;
 static u32 refFrameTime = 0;
 
-static void updateLoop() {
+static u32 updateLoop() {
     u32 now = getTimeMicro();
     u32 frameTime = now - prevFrame;
     bool expired = !maxFrameTime || frameTime >= maxFrameTime;
     Schedule::runUpdateHooks(expired, now);
-    if (!expired) return;
+    if (!expired) return maxFrameTime - frameTime;
 
     frameCount++;
     if(now - refFrameTime >= 1000000){
@@ -234,6 +234,8 @@ static void updateLoop() {
 
     updateHandler();
     updateDisplay();
+
+    return 0;
 }
 
 static void blockingRun(){

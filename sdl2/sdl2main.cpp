@@ -2,6 +2,8 @@
 #include <chrono>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#else
+#include <thread>
 #endif
 
 #ifndef PIXEL_SIZE
@@ -222,7 +224,11 @@ int main(){
     #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(+[](void*){updateLoop();}, nullptr, -1, 1 );
     #else
-    while(true){ updateLoop(); }
+    while(true){
+        if (u32 timeLeft = updateLoop(); timeLeft) {
+            std::this_thread::sleep_for(std::chrono::microseconds(timeLeft));
+        }
+    }
     #endif
 
     return 0;
