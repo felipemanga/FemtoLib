@@ -11,6 +11,13 @@ namespace Graphics {
     inline bool doubleFontSize;
 
     inline Point2D camera;
+
+    enum class TextMode {
+        Wrap,
+        Clip
+    };
+
+    inline TextMode textMode = TextMode::Wrap;
 }
 
 #include "general.hpp"

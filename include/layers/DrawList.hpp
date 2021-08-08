@@ -39,10 +39,16 @@ namespace Graphics {
             bool isNewLine = index == '\n';
             bool isWhitespace = index <= ' ';
             index -= font[2];
-            if (isNewLine || u32(textX) > screenWidth) {
+
+            if (isNewLine) {
                 textX = 0;
                 textY += h * scale + linePadding;
                 return;
+            }
+
+            if (u32(textX) > screenWidth && textMode == TextMode::Wrap) {
+                textX = 0;
+                textY += h * scale + linePadding;
             }
 
             uint8_t hbytes = ((h>>3) + ((h != 8) && (h != 16)));
