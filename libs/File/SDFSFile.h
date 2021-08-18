@@ -27,6 +27,10 @@ public:
         other.handle = nullptr;
     }
 
+    File(const char* name, bool create = false, bool append = false) : handle(nullptr)  {
+        openRW(name, create, append);
+    }
+
     ~File(){
         close();
     }

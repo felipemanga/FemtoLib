@@ -30,6 +30,11 @@ public:
         other.handle.fs = nullptr;
     }
 
+    File(const char* name, bool create = false, bool append = false) {
+        handle.fs = nullptr;
+        openRW(name, create, append);
+    }
+
     ~File(){
         close();
     }
