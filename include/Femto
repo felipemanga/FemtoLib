@@ -6,7 +6,7 @@
 
 #define WEAK          __attribute__ ((weak))
 #ifndef __clang__
-#define ALIGN(TYPE)   __attribute__((align(alignof(TYPE))))
+#define ALIGN(TYPE)   __attribute__((aligned(alignof(TYPE))))
 #else
 #define ALIGN(TYPE)
 #endif

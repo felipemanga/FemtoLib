@@ -128,14 +128,14 @@ public:
         // Bitmap::array::fill(value);
         // ptr()[0] = w;
         // ptr()[1] = h;
-        MemOps::set(ptr() + 2, 0, count - 2);
+        MemOps::set(ptr() + 2, value, count - 2);
     }
 
     template<bool optimizeForLongLines = false>
     void drawHLine8(s32 x, s32 y, s32 w, u32 color) {
         u32 bitmapWidth = width();
-        if (u32(x + w) > bitmapWidth) w = bitmapWidth - x;
-        if (x < 0){ w -= x; x = 0; }
+        if (u32(x + w) >= bitmapWidth) w = bitmapWidth - x - 1;
+        if (x < 0){ w += x; x = 0; }
         if (w <= 0 || u32(x) >= bitmapWidth || u32(y) >= height()) return;
 
         auto pos = ptr() + 2 + x + y * bitmapWidth;
@@ -162,8 +162,30 @@ public:
         }
     }
 
+    void drawHLine4(s32 x, s32 y, s32 w, u32 color) {
+        u32 bitmapWidth = width();
+        if (u32(x + w) > bitmapWidth) w = bitmapWidth - x;
+        if (x < 0){ w -= x; x = 0; }
+        if (w <= 0 || u32(x) >= bitmapWidth || u32(y) >= height()) return;
+
+        auto pos = ptr() + 2 + (x >> 1) + y * (bitmapWidth >> 1);
+        if (x & 1) {
+            set(x, y, color);
+            w--;
+        }
+
+        color = color & 0xF;
+        color |= color << 4;
+
+        pos += w >> 1;
+        for (s32 x = 0; x < w; x += 2) {
+            *pos++ = color;
+        }
+    }
+
     void drawHLine(u32 x, u32 y, s32 w, u32 color) {
         if constexpr (_bpp == 8) drawHLine8(x, y, w, color);
+        else if constexpr (_bpp == 4) drawHLine4(x, y, w, color);
     }
 
 /* * /
@@ -289,13 +311,13 @@ public:
             std::swap(x2, x3);
         }
 
-	u32 t1x = x1, t2x = x1, y = y1, minx, maxx, t1xp, t2xp;
+	s32 t1x = x1, t2x = x1, y = y1, minx, maxx, t1xp, t2xp;
 	bool changed1 = false;
 	bool changed2 = false;
 	s32 signx1 = 1, signx2 = 1,
             dx1 = x2 - x1, dy1 = y2 - y1,
             dx2 = x3 - x1, dy2 = y3 - y1;
-	u32 e1, e2;
+	s32 e1, e2;
 
         if (dx1 < 0) {
             dx1 = -dx1;
@@ -320,7 +342,7 @@ public:
         // Flat top, just process the second half
         if (y1 != y2) {
             e1 = dx1 >> 1;
-            for (u32 i = 0; i < dx1;) {
+            for (s32 i = 0; i < dx1;) {
                 t1xp = 0;
                 t2xp = 0;
 
@@ -407,7 +429,7 @@ public:
 
 	e1 = dx1 >> 1;
 
-	for (u32 i = 0; i <= dx1; i++) {
+	for (s32 i = 0; i <= dx1; i++) {
             t1xp = 0;
             t2xp = 0;
             if (t1x < t2x) {
@@ -478,7 +500,11 @@ public:
         return Bitmap::array::data();
     }
 
-    void set(u32 index, u32 value) {
+    void set(u32 x, u32 y, u32 value) {
+        if constexpr (_bpp == 4) set4(x + y * width(), value);
+    }
+
+    void set4(u32 index, u32 value) {
         u32 old = Bitmap::array::operator[](index >> 1);
         if (index & 1) {
             old &= 0x0F;
