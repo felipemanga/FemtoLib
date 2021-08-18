@@ -83,8 +83,8 @@ namespace Graphics {
         };
 
         namespace _internal {
-            Function<u32(u32, u32)> *getTile;
-            Function<TileCopy(u32)> *getBitmap;
+            inline Function<u32(u32, u32)> *getTile;
+            inline Function<TileCopy(u32)> *getBitmap;
         }
 
         template<
@@ -124,7 +124,7 @@ namespace Graphics {
         *Graphics::layer::_internal::getTile = map;
     }
 
-    void setTileset(const u8 *ts) {
+    inline void setTileset(const u8 *ts) {
         *Graphics::layer::_internal::getBitmap = {
             reinterpret_cast<uptr>(ts),
             [](uptr uts, u32 tileId) -> layer::TileCopy {

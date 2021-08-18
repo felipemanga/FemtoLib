@@ -195,6 +195,10 @@ inline constexpr f32 toRadians(f32 deg){
     return deg * PI / 180.0f;
 }
 
+inline constexpr f32 tweenTo(f32 t, f32 v, s32 speed) {
+    return t - s24q8ToF32((f32ToS24q8(t) - f32ToS24q8(v)) >> speed);
+}
+
 #else
 
 #include "fixed.hpp"

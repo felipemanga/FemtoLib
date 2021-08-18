@@ -590,7 +590,7 @@ namespace Graphics {
                 maxY += sb.y;
                 if(maxY < 0)
                     return;
-                if(maxY > screenHeight)
+                if(maxY > s32(screenHeight))
                     maxY = screenHeight;
                 sb.maxY = maxY;
 

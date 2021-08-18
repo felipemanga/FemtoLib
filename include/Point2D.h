@@ -2,11 +2,19 @@
 
 #include "types.hpp"
 
+constexpr f32 tweenTo(f32 t, f32 v, s32 speed);
+
 struct Point2D {
     f32 x, y;
     void set(f32 x, f32 y){
         this->x = x;
         this->y = y;
+    }
+
+    Point2D& tweenTo(const Point2D& other, s32 factor) {
+        x = ::tweenTo(x, other.x, factor);
+        y = ::tweenTo(y, other.y, factor);
+        return *this;
     }
 
     bool distanceCheck(f32 range) {
@@ -40,6 +48,41 @@ struct Point2D {
         this->y = sr * this->x + cr * this->y;
         this->x = x;
         return *this;
+    }
+
+    Point2D operator - () {
+        Point2D r;
+        r.x = -x;
+        r.y = -y;
+        return r;
+    }
+
+    Point2D xx() {
+        Point2D r;
+        r.x = x;
+        r.y = x;
+        return r;
+    }
+
+    Point2D xy() {
+        Point2D r;
+        r.x = x;
+        r.y = y;
+        return r;
+    }
+
+    Point2D yx() {
+        Point2D r;
+        r.x = y;
+        r.y = x;
+        return r;
+    }
+
+    Point2D yy() {
+        Point2D r;
+        r.x = y;
+        r.y = y;
+        return r;
     }
 
     Point2D& operator *= (f32 scalar) {

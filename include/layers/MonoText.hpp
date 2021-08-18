@@ -135,7 +135,7 @@ public:
 
 }
 
-void clearText(){
+inline void clearText(){
     layer::_monoInternal::_clear();
 }
 
