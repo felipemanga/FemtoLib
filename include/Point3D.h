@@ -11,7 +11,7 @@ struct Point3D : public Point2D {
         return *this;
     }
 
-    Point3D operator - () {
+    Point3D operator - () const {
         Point3D r;
         r.x = -x;
         r.y = -y;
@@ -19,35 +19,35 @@ struct Point3D : public Point2D {
         return r;
     }
 
-    Point2D xz() {
+    Point2D xz() const {
         Point2D r;
         r.x = x;
         r.y = z;
         return r;
     }
 
-    Point2D yz() {
+    Point2D yz() const {
         Point2D r;
         r.x = y;
         r.y = z;
         return r;
     }
 
-    Point2D zx() {
+    Point2D zx() const {
         Point2D r;
         r.x = z;
         r.y = x;
         return r;
     }
 
-    Point2D zy() {
+    Point2D zy() const {
         Point2D r;
         r.x = z;
         r.y = y;
         return r;
     }
 
-    Point2D zz() {
+    Point2D zz() const {
         Point2D r;
         r.x = z;
         r.y = z;
@@ -82,7 +82,7 @@ struct Point3D : public Point2D {
         return *this;
     }
 
-    Point3D operator + (const Point3D &other) {
+    Point3D operator + (const Point3D &other) const {
         Point3D c{*this};
         c.x += other.x;
         c.y += other.y;
@@ -90,7 +90,7 @@ struct Point3D : public Point2D {
         return c;
     }
 
-    Point3D operator * (const Point3D &other) {
+    Point3D operator * (const Point3D &other) const {
         Point3D c{*this};
         c.x *= other.x;
         c.y *= other.y;
@@ -106,7 +106,7 @@ struct Point3D : public Point2D {
         return c;
     }
 
-    Point3D operator - (const Point3D &other) {
+    Point3D operator - (const Point3D& other) const {
         Point3D c{*this};
         c.x -= other.x;
         c.y -= other.y;
@@ -114,7 +114,7 @@ struct Point3D : public Point2D {
         return c;
     }
 
-    void rotateXZ(f32 rad){
+    void rotateXZ(f32 rad) {
         f32 cr = cos(rad);
         f32 sr = sin(rad);
         f32 x = cr * this->x - sr * z;
@@ -122,7 +122,7 @@ struct Point3D : public Point2D {
         this->x = x;
     }
 
-    void rotateYZ(f32 rad){
+    void rotateYZ(f32 rad) {
         f32 cr = cos(rad);
         f32 sr = sin(rad);
         f32 y = cr * this->y - sr * z;
@@ -131,15 +131,15 @@ struct Point3D : public Point2D {
     }
 
 
-    f32 lengthSquared() {
+    f32 lengthSquared() const {
         return x * x + y * y + z * z;
     }
 
-    f32 length() {
+    f32 length() const {
         return sqrt(lengthSquared());
     }
 
-    Point3D normalize() {
+    Point3D normalize() const {
         Point3D point = *this;
         f32 len = length();
         if (len) {

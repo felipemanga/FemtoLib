@@ -131,7 +131,6 @@ namespace Audio {
 
     public:
         void init(){
-            NVIC_SetVector((IRQn_Type)TIMER_32_0_IRQn, (uint32_t)IRQ);
             if(this->wasInit)
                 return;
             this->wasInit = true;

@@ -224,9 +224,10 @@ int main(){
     #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(+[](void*){updateLoop();}, nullptr, -1, 1 );
     #else
+    using namespace std::chrono_literals;
     while(true){
-        if (u32 timeLeft = updateLoop(); timeLeft) {
-            std::this_thread::sleep_for(std::chrono::microseconds(timeLeft));
+        if (auto timeLeft = std::chrono::microseconds(updateLoop()) - 1ms; timeLeft > std::chrono::microseconds(maxFrameTime / 4)) {
+            std::this_thread::sleep_for(timeLeft);
         }
     }
     #endif

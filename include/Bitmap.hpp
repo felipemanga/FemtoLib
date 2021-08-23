@@ -131,7 +131,6 @@ public:
         MemOps::set(ptr() + 2, value, count - 2);
     }
 
-    template<bool optimizeForLongLines = false>
     void drawHLine8(s32 x, s32 y, s32 w, u32 color) {
         u32 bitmapWidth = width();
         if (u32(x + w) >= bitmapWidth) w = bitmapWidth - x - 1;
@@ -139,27 +138,23 @@ public:
         if (w <= 0 || u32(x) >= bitmapWidth || u32(y) >= height()) return;
 
         auto pos = ptr() + 2 + x + y * bitmapWidth;
-
-        if (optimizeForLongLines) {
-            if (w > 8) {
-                while(uptr(pos) & 0x3){
-                    *pos++ = color;
-                    w--;
-                }
-
-                while(w >= 4){
-                    *reinterpret_cast<u32*>(pos) = color;
-                    pos += 4;
-                    w -= 4;
-                }
-            }
-        }
-
         pos += w;
         w = -w;
+#if defined(TARGET_LPC11U6X)
+        __asm__ volatile (
+            ".syntax unified" "\n"
+            "1: adds %0, 1 \n"
+            "strb %2, [%1, %0] \n"
+            "bne 1b \n"
+            : "+l" (w)
+            : "l" (pos), "l" (color)
+            : "cc"
+            );
+#else
         while (w++ < 0) {
             pos[w] = color;
         }
+#endif
     }
 
     void drawHLine4(s32 x, s32 y, s32 w, u32 color) {

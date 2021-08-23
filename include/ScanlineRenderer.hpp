@@ -62,7 +62,7 @@ namespace Graphics {
     };
 
     template <typename ... Args>
-    class Renderer : DynamicRenderer {
+    class Renderer : public DynamicRenderer {
         std::tuple<Args...> args;
         LineFiller fillers[sizeof...(Args)];
 

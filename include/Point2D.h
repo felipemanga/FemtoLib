@@ -17,21 +17,21 @@ struct Point2D {
         return *this;
     }
 
-    bool distanceCheck(f32 range) {
+    bool distanceCheck(f32 range) const {
         if (std::max(abs(f32ToS24q8(x)), abs(f32ToS24q8(y))) > f32ToS24q8(range))
             return false;
         return lengthSquared() < range * range;
     }
 
-    f32 lengthSquared() {
+    f32 lengthSquared() const {
         return x * x + y * y;
     }
 
-    f32 length() {
+    f32 length() const {
         return sqrt(lengthSquared());
     }
 
-    Point2D normalize() {
+    Point2D normalize() const {
         Point2D point = *this;
         f32 len = length();
         if (len) {
@@ -57,28 +57,28 @@ struct Point2D {
         return r;
     }
 
-    Point2D xx() {
+    Point2D xx() const {
         Point2D r;
         r.x = x;
         r.y = x;
         return r;
     }
 
-    Point2D xy() {
+    Point2D xy() const {
         Point2D r;
         r.x = x;
         r.y = y;
         return r;
     }
 
-    Point2D yx() {
+    Point2D yx() const {
         Point2D r;
         r.x = y;
         r.y = x;
         return r;
     }
 
-    Point2D yy() {
+    Point2D yy() const {
         Point2D r;
         r.x = y;
         r.y = y;

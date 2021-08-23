@@ -1,0 +1,18 @@
+#pragma once
+
+#include "cmsis_nvic.h"
+
+
+namespace PROFILER_ {
+
+    namespace {
+#if defined(PROFILER_IN_RAM)
+        inline unsigned char counters[0x800];
+#elif defined(PROFILER_IN_RAM1)
+        inline unsigned char *counters = reinterpret_cast<unsigned char*>(0x20000000);
+#elif defined(PROFILER_IN_RAM2)
+        inline unsigned char *counters = reinterpret_cast<unsigned char*>(0x20004000);
+#endif
+    }
+
+}

@@ -1,0 +1,148 @@
+#pragma once
+
+/*
+
+How to profile on hardware with LibProfiler
+
+Step 1 - Configure the Profiler:
+    The profiler requires 2KB of RAM for storing statistics. With a compile flag you can tell
+    it where those 2KB should be placed: in main RAM, RAM1 or RAM2 (USBRAM).
+    In project.json:
+    - Look for the platform you want to profile ("Pokitto") in the "CPPFlags" section.
+    - Add ONE of the following lines:
+      "-DPROFILER_IN_RAM",
+      "-DPROFILER_IN_RAM1",
+      "-DPROFILER_IN_RAM2",
+
+Step 2 - Initialize the Profiler:
+    In main.cpp:
+    #include <LibProfiler>
+
+    Then, AFTER everything has been initialized:
+    INIT_PROFILER;
+
+Step 3 - Instrument your code:
+    Use the PROFILER macro liberally. If none of the PROFILER_IN_RAMx flags are present, PROFILER macros
+    will turn into nothing, having no impact in your code whatsoever.
+
+    void functionA(){
+      PROFILER;
+      ... do stuff ...
+    }
+
+    void functionB(){
+      PROFILER;
+      ... do other stuff...
+    }
+
+Step 4 - Find the bottleneck:
+    print(profiler::getBottleneck());
+
+Step 5 - Once the bottleneck has been identified, simply remove the "-DPROFILER_IN_RAMx" flag to disable
+the profiler entirely.
+
+ */
+
+#if defined(TARGET_LPC11U6X)
+#include "mbed.h"
+
+namespace profiler {
+
+    namespace {
+#if defined(PROFILER_IN_RAM)
+#define PROFILER_ENABLED 1
+        inline unsigned char counters[0x800];
+#elif defined(PROFILER_IN_RAM1)
+#define PROFILER_ENABLED 1
+        inline unsigned char *counters = reinterpret_cast<unsigned char*>(0x20000000);
+#elif defined(PROFILER_IN_RAM2)
+#define PROFILER_ENABLED 1
+        inline unsigned char *counters = reinterpret_cast<unsigned char*>(0x20004000);
+#endif
+#if defined(PROFILER_ENABLED)
+        inline constexpr u32 TIMER_32_0_IRQn = 18;
+        inline volatile const char* bottleneck = "sampling";
+#endif
+    }
+
+#if PROFILER_ENABLED
+    inline const char* getBottleneck() {return (const char*) bottleneck;}
+
+    class Sentinel;
+    namespace {
+        inline volatile Sentinel* current;
+    }
+
+    class Sentinel {
+    public:
+        volatile Sentinel* parent;
+        const char* ctx;
+        uintptr_t address;
+        Sentinel() = delete;
+        Sentinel(const char* ctx) : parent(current),
+                                    ctx(ctx),
+                                    address(reinterpret_cast<uintptr_t>(__builtin_return_address(0))) {
+            current = this;
+        }
+        ~Sentinel(){
+            current = parent;
+        }
+    };
+
+    inline void (*prevIRQ)() = nullptr;
+    inline void IRQ(){
+        uintptr_t address;
+        const char* name;
+
+        if (current) {
+            address = (current->address >> 3) & (0x800 - 1);
+            name = current->ctx;
+
+            auto counter = counters[address];
+            if (counter < 255) {
+                counters[address] = counter + 1;
+            } else {
+                bottleneck = name;
+                for (u32 i = 0; i < 0x800; ++i) {
+                    counters[address] = 0;
+                    // if (i != address && counters[address]) {
+                    //     counters[address]--;
+                    // }
+                }
+            }
+        }
+        if(prevIRQ)
+           prevIRQ();
+    }
+
+    inline void init() {
+        static bool wasInit = false;
+        if (wasInit) return;
+        wasInit = true;
+
+        for(int i=0; i<0x800; ++i)
+            counters[i] = 0;
+
+        prevIRQ = reinterpret_cast<decltype(prevIRQ)>(NVIC_GetVector((IRQn_Type)TIMER_32_0_IRQn));
+        NVIC_SetVector((IRQn_Type)TIMER_32_0_IRQn, (uint32_t)IRQ);
+    }
+
+#define PROFILER profiler::Sentinel _profiler_ ## __COUNTER__ (__PRETTY_FUNCTION__);
+#define INIT_PROFILER profiler::init();
+
+#else
+
+    inline const char* getBottleneck(){return "";}
+
+#define PROFILER
+#define INIT_PROFILER
+
+#endif
+}
+#else
+namespace profiler {
+    inline const char* getBottleneck(){return "";}
+}
+#define PROFILER
+#define INIT_PROFILER
+#endif

@@ -48,7 +48,18 @@ public:
 
     void clear(){
         textX = textY = 0;
+#if defined(TARGET_LPC11U6X)
+        __asm__ volatile (
+            ".syntax unified" "\n"
+            "1: subs %0, 1 \n"
+            "strb %2, [%1, %0] \n"
+            "bne 1b \n"
+            :: "l" (sizeof(buffer)), "l" (buffer), "l" (0)
+            : "cc"
+            );
+#else
         MemOps::set(buffer, 0, sizeof(buffer));
+#endif
     }
 
     void clear(u32 start, u32 end = ~0){
