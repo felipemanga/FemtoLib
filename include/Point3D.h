@@ -11,6 +11,13 @@ struct Point3D : public Point2D {
         return *this;
     }
 
+    Point3D& tweenTo(const Point3D& other, f32 factor) {
+        x = ::tweenTo(x, other.x, factor);
+        y = ::tweenTo(y, other.y, factor);
+        z = ::tweenTo(z, other.z, factor);
+        return *this;
+    }
+
     Point3D operator - () const {
         Point3D r;
         r.x = -x;

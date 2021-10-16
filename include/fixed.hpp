@@ -20,6 +20,10 @@ inline constexpr f32 tweenTo(f32 t, f32 v, s32 speed) {
     return t - s24q8ToF32((f32ToS24q8(t) - f32ToS24q8(v)) >> speed);
 }
 
+inline constexpr f32 tweenTo(f32 t, f32 v, f32 speed) {
+    return (t * (f32(1.0f) - speed) + (v * speed));
+}
+
 inline constexpr f32 sin(f32 rad) {
     using trig = Trig<(PI/2).getInternal(), 255>;
     return f32::fromInternal(trig::sin(rad.getInternal()));

@@ -17,6 +17,12 @@ struct Point2D {
         return *this;
     }
 
+    Point2D& tweenTo(const Point2D& other, f32 factor) {
+        x = ::tweenTo(x, other.x, factor);
+        y = ::tweenTo(y, other.y, factor);
+        return *this;
+    }
+
     bool distanceCheck(f32 range) const {
         if (std::max(abs(f32ToS24q8(x)), abs(f32ToS24q8(y))) > f32ToS24q8(range))
             return false;
