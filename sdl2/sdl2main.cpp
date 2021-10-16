@@ -111,7 +111,27 @@ static void* updateEvents(bool isFrame) {
             case SDLK_d:
                 buttonState<Button::C> = isDown;
                 break;
+#ifdef VERTICAL_SCREEN
+            case SDLK_i:
+            case SDLK_UP:
+                buttonState<Button::Left> = isDown;
+                break;
 
+            case SDLK_k:
+            case SDLK_DOWN:
+                buttonState<Button::Right> = isDown;
+                break;
+
+            case SDLK_j:
+            case SDLK_LEFT:
+                buttonState<Button::Down> = isDown;
+                break;
+
+            case SDLK_l:
+            case SDLK_RIGHT:
+                buttonState<Button::Up> = isDown;
+                break;
+#else
             case SDLK_i:
             case SDLK_UP:
                 buttonState<Button::Up> = isDown;
@@ -131,6 +151,7 @@ static void* updateEvents(bool isFrame) {
             case SDLK_RIGHT:
                 buttonState<Button::Right> = isDown;
                 break;
+#endif
 
 #ifndef __EMSCRIPTEN__
             case SDLK_ESCAPE:
@@ -144,10 +165,17 @@ static void* updateEvents(bool isFrame) {
 }
 
 extern "C" void flushLine16(u16 *line) {
+#ifdef VERTICAL_SCREEN
+    auto frameLine = frameBuffer + (screenHeight - scanlineY - 1);
+    for(u32 x=0, x2 = 0; x<screenWidth; ++x, x2 += (vscreen->pitch >> 1)){
+        frameLine[x2] = line[x];
+    }
+#else
     auto frameLine = frameBuffer + scanlineY * (vscreen->pitch >> 1);
     for(u32 x=0; x<screenWidth; ++x){
         frameLine[x] = line[x];
     }
+#endif
 
     if (u32(++scanlineY) >= screenHeight) {
         scanlineY = 0;
@@ -173,9 +201,19 @@ int main(){
         return -1;
     }
 
+
+#ifdef VERTICAL_SCREEN
+    u32 windowHeight = screenWidth;
+    u32 windowWidth = screenHeight;
+#else
+    u32 windowWidth = screenWidth;
+    u32 windowHeight = screenHeight;
+#endif
+
+
     window = SDL_CreateWindow(
         PROJECT_NAME,
-        0, 0, screenWidth * PIXEL_SIZE, screenHeight * PIXEL_SIZE,
+        0, 0, windowWidth * PIXEL_SIZE, windowHeight * PIXEL_SIZE,
         SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (!window) {
@@ -188,8 +226,8 @@ int main(){
     screen = SDL_GetWindowSurface( window );
     vscreen = SDL_CreateRGBSurface(
 	0, // flags
-	screenWidth, // w
-	screenHeight, // h
+	windowWidth, // w
+	windowHeight, // h
 	screenBPP, // depth
 	0,
 	0,
