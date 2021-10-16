@@ -199,6 +199,75 @@ namespace Graphics {
 // #endif
         }
 
+        inline void blit8BPPRLE(u16 *line, Cmd& s, u32 y) {
+            extern void pixelCopy8BPP(u16*, const u8 *, u32, const u16 *);
+            auto data = static_cast<const u8*>(s.data);
+            int w = s.width;
+            s32 sx = s.x;
+            const uint8_t *src = data + 2 + data[1];
+
+            for (u32 i = 0; i < y; ++i)
+                src += data[2 + i];
+            u32 len = data[2 + y];
+
+            auto lineEnd = line + screenWidth;
+            auto max = std::min(line + sx + w, lineEnd);
+            auto palette = reinterpret_cast<const u16 *>(s.udata);
+
+            u32 i = 0;
+
+            if (sx < 0) {
+
+                while (true) {
+                    u32 step = src[i++];
+                    sx += step;
+                    if (sx >= 0) {
+                        line += sx;
+
+                        if (line >= max)
+                            return;
+
+                        step = src[i++];
+                        auto m = std::min<u32>(step, lineEnd - line);
+                        pixelCopy8BPP(line, src + i, m, palette);
+                        line += m;
+                        i += step;
+                        break;
+                    }
+
+                    step = src[i++];
+                    if (s32(sx + step) > 0) {
+                        auto m = std::min<u32>(step + sx, lineEnd - line);
+                        pixelCopy8BPP(line, src + i - sx, m, palette);
+                        line += m;
+                        i += step;
+                        break;
+                    } else {
+                        i += step;
+                        sx += step;
+                        if (sx == 0)
+                            break;
+                    }
+                }
+
+            } else if(sx > 0) {
+                line += sx;
+            }
+
+            while (i < len) {
+                u32 step = src[i++];
+                line += step;
+                if (line >= max)
+                    break;
+
+                step = src[i++];
+                auto m = std::min<u32>(step, lineEnd - line);
+                pixelCopy8BPP(line, src + i, m, palette);
+                line += m;
+                i += step;
+            }
+        }
+
         template <u32 bits, bool isTransparent, bool scale2x = false>
         inline void blitXBPP(u16 *line, Cmd &s, u32 y){
             extern void pixelCopy8BPPA(u16*, const u8 *, u32, const u16 *, u32);
@@ -809,8 +878,9 @@ namespace Graphics {
     template <bool transparent = true,
               bool scale2x = false,
               u32 bits = 0,
+              bool rle = false,
               typename std::enable_if<isPowerOfTwo(bits), int>::type = 1>
-    inline bool draw(const BitmapFrame<bits>& bitmap, s32 x = 0, s32 y = 0, f32 falpha = 1){
+    inline bool draw(const BitmapFrame<bits, rle>& bitmap, s32 x = 0, s32 y = 0, f32 falpha = 1){
         using namespace _drawListInternal;
 
         if (s32(x + (bitmap.width() << scale2x)) <= scale2x || x >= s32(screenWidth)) return false;
@@ -827,6 +897,8 @@ namespace Graphics {
             if (alpha != ((0xFF + 4) >> 3)) {
                 udata = (udata | udata << 16) & 0x07e0f81f;
             }
+        } else if (rle) {
+            f = blit8BPPRLE;
         } else {
             f = blitXBPP<bits, transparent, scale2x>;
         }

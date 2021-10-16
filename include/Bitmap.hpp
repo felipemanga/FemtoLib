@@ -5,16 +5,18 @@
 #include <algorithm>
 #include <type_traits>
 
-template<u32 _bpp>
+template<u32 _bpp, bool _rle = false>
 class BitmapFrame {
 public:
     static constexpr u32 bitsPerPixel = _bpp;
+    static constexpr bool rle = _rle;
     const u8 * const data = nullptr;
     const u32 w = 0;
     const u32 h = 0;
     const u32 frame = 0;
 
     const u8 *ptr() const {
+        if (rle) return data;
         return data + 2 + (w / (8 / _bpp)) * (h / (8 / _bpp)) * frame;
     }
 
